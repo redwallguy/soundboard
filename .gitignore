@@ -1,3 +1,5 @@
 .DS_Store
 Procfile.dev
 .env
+test
+*.pyc
