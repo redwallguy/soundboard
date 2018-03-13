@@ -341,7 +341,7 @@ async def playHelper(ctx, songName, board="None"):
                         vc.play(discord.FFmpegPCMAudio('./command_sounds/cease.mp3'))
                 return
 #-----------------------------------------------------------
-# Helper commands
+# Helper commands .
 #-----------------------------------------------------------
 @bot.command(aliases=['ls'])
 async def listBoard(ctx, bd = "None"):
