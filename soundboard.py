@@ -23,6 +23,7 @@ mods = [int(x) for x in r.lrange("mods",0,-1)]
 banned = [int(x) for x in r.lrange("banned",0,-1)]
 aliases = {}
 ali={}
+currentBoard = ""
 
 s3 = boto3.resource('s3')
 s3client = boto3.client('s3')
@@ -47,12 +48,17 @@ async def getBoards():
 #-----------------------------------------------------------
 # Spam prevention
 #-----------------------------------------------------------
+#Look at @cooldown decorator for future bots
 @bot.check
 async def notBanned(ctx):
-    if ctx.author.id in banlist and ctx.author.id != overlord:
+    if ctx.author.id in banned and ctx.author.id != overlord:
         return False
     else:
         return True
+
+@bot.check
+async def notBot(ctx):
+    return not ctx.author.bot
 
 @bot.check
 async def stopSpamming(ctx):
@@ -79,6 +85,7 @@ def flushTempBan():
 
 @bot.event
 async def on_ready():
+    switchBoardsHelper("kripp")
     while True:
         flushTempBan()
         await asyncio.sleep(5)
@@ -87,6 +94,7 @@ async def on_ready():
 # Bot commands (Administrative)
 #-----------------------------------------------------------
 #change to make play Elohim quotes on command (pass ctx?)
+
 @bot.command()
 @commands.check(isAdmin)
 async def makeMod(ctx,member: discord.Member):
@@ -128,9 +136,9 @@ async def ban(ctx, member: discord.Member):
     """
     #use CEASE from Elohim
     uid = member.id
-    if uid not in mods and uid not in banlist and uid != overlord:
-        r.lpush("banlist", uid)
-        banlist.append(uid)
+    if uid not in mods and uid not in banned and uid != overlord:
+        r.lpush("banned", uid)
+        banned.append(uid)
         await ctx.send("Begone!")
         return True
     else:
@@ -144,9 +152,9 @@ async def unban(ctx,member: discord.Member):
     Only usable by mods.
     """
     uid = member.id
-    if uid in banlist:
-        r.lrem("banlist", uid)
-        banlist.remove(uid)
+    if uid in banned:
+        r.lrem("banned", uid)
+        banned.remove(uid)
         await ctx.send("Welcome back, child.")
         return True
     else:
@@ -171,7 +179,7 @@ async def getBannedOnes(ctx):
     """
     banmsg = "These are the exiles. Look upon them and weep.\n"\
              "----------------------------------------------\n"
-    for banppl in banlist:
+    for banppl in banned:
         banmem = await bot.get_user_info(banppl)
         banmsg += banmem.name + "\n"
     await ctx.send(banmsg)
@@ -179,11 +187,26 @@ async def getBannedOnes(ctx):
 #-----------------------------------------------------------
 # Bot commands and helper functions (audio)
 #-----------------------------------------------------------
+@bot.command()
+async def bye(ctx):
+    """
+    Disconnects bot from voice channel user is in
+    """
+    if ctx.author.voice is not None:
+        if alreadyConnected(ctx.author.voice.channel):
+            vc = clientFromChannel(ctx.author.voice.channel)
+            await vc.disconnect()
+
 @bot.command(aliases=['sb','switch'])
 async def switchBoards(ctx, board):
-    switchBoardsHelper(ctx,board)
+    """
+    Switches the soundboard to {board}
+    Only usable by mods.
+    """
+    switchBoardsHelper(board)
+    await ctx.send("Board switched to " + board)
 
-async def switchBoardsHelper(ctx,board):
+def switchBoardsHelper(board):
     if board in boards:
         try:
             shutil.rmtree('./cache')
@@ -196,50 +219,64 @@ async def switchBoardsHelper(ctx,board):
                                                 Prefix=board+'/')["Contents"]
 
             for obj in foldDict:
-                if obj["Key"].endswith(r"\.mp3"):
+                if obj["Key"].endswith("mp3"):
+                    print(obj["Key"])
                     musicRegex = re.compile(r"(?<="+re.escape(board)+r"/).+?mp3")
                     fileName = musicRegex.search(obj["Key"]).group(0)
                     s3.Bucket(bucketName).download_file(obj["Key"],'cache/'+fileName)
-                if obj["Key"].endswith(r"\.json"):
+                if obj["Key"].endswith("json"):
+                    print(obj["Key"])
                     s3.Bucket(bucketName).download_file(obj["Key"],'cache/aliases.json')
         except Exception as e:
             print(e)
         with open('./cache/aliases.json') as f:
+            global aliases
             aliases = json.load(f)
-        await ctx.send("Board switched to " + board)
-
+        global currentBoard
+        currentBoard = board
 def alreadyConnected(vc):
     for client in bot.voice_clients:
-        if vc = client.channel:
+        if vc == client.channel:
             return True
     return False
 
 def clientFromChannel(chan):
     for client in bot.voice_clients:
-        if chan = client.channel:
+        if chan == client.channel:
             return client
 
 @bot.command()
-async def play(ctx, SN):
-    playHelper(ctx,SN)
+async def play(ctx, SN, b="None"):
+    """
+    Plays clip {SN} or any clip it is an alias of.
+
+    Ex. +play hellothere
+        +play hello
+
+    If {b} is specified, then the clip will be searched for in board {b}.
+    Else, it will be searched for in the current board.
+
+    Ex. +play rng kripp
+    """
+    await playHelper(ctx,SN,b)
                 
-async def playHelper(ctx, songName, board: str="None"):
+async def playHelper(ctx, songName, board="None"):
     if board == "None":
-        if ctx.author.voice not None and not ctx.message.author.bot:
+        if ctx.author.voice is not None and not ctx.author.bot:
             for song in aliases:
                 if songName+'.mp3' == song:
                     if not alreadyConnected(ctx.author.voice.channel):
-                        await vc = ctx.author.voice.channel.connect()
+                        vc = await ctx.author.voice.channel.connect()
                         vc.play(discord.FFmpegPCMAudio('./cache/'+song))
                     else:
                         vc = clientFromChannel(ctx.author.voice.channel)
                         if not vc.is_playing():
                             vc.play(discord.FFmpegPCMAudio('./cache/'+song))
                     return
-                for alias in song:
+                for alias in aliases[song]:
                     if songName == alias:
                         if not alreadyConnected(ctx.author.voice.channel):
-                            await vc = ctx.author.voice.channel.connect()
+                            vc = await ctx.author.voice.channel.connect()
                             vc.play(discord.FFmpegPCMAudio('./cache/'+song))
                         else:
                             vc = clientFromChannel(ctx.author.voice.channel)
@@ -252,12 +289,13 @@ async def playHelper(ctx, songName, board: str="None"):
         try:
             s3.Bucket(bucketName).download_file(board+'/aliases.json','ali.json')
             with open('ali.json') as f:
+                global ali
                 ali = json.load(f)
-            if ctx.author.voice not None and not ctx.message.author.bot:
+            if ctx.author.voice is not None and not ctx.author.bot:
                 for song in ali:
                     if songName+'.mp3' == song:
                         if not alreadyConnected(ctx.author.voice.channel):
-                            await vc = ctx.author.voice.channel.connect()
+                            vc = await ctx.author.voice.channel.connect()
                             s3.Bucket(bucketName).download_file(board+'/'+song,'temp3.mp3')
                             vc.play(discord.FFmpegPCMAudio('temp3.mp3'))
                         else:
@@ -266,10 +304,10 @@ async def playHelper(ctx, songName, board: str="None"):
                                 s3.Bucket(bucketName).download_file(board+'/'+song,'temp3.mp3')
                                 vc.play(discord.FFmpegPCMAudio('temp3.mp3'))
                         return
-                    for alias in song:
+                    for alias in ali[song]:
                         if songName == alias:
                             if not alreadyConnected(ctx.author.voice.channel):
-                                await vc = ctx.author.voice.channel.connect()
+                                vc = await ctx.author.voice.channel.connect()
                                 s3.Bucket(bucketName).download_file(board+'/'+song,'temp3.mp3')
                                 vc.play(discord.FFmpegPCMAudio('temp3.mp3'))
                             else:
@@ -282,3 +320,65 @@ async def playHelper(ctx, songName, board: str="None"):
                 ctx.send("Only humans in voice channels accepted here")
         except Exception as e:
             print(e)
+    elif board == "command":
+        if ctx.author.voice is not None and not ctx.author.bot:
+            if songName == "help":
+                if not alreadyConnected(ctx.author.voice.channel):
+                    vc = await ctx.author.voice.channel.connect()
+                    vc.play(discord.FFmpegPCMAudio('./command_sounds/help.mp3'))
+                else:
+                    vc = clientFromChannel(ctx.author.voice.channel)
+                    if not vc.is_playing():
+                        vc.play(discord.FFmpegPCMAudio('./command_sounds/help.mp3'))
+                return
+            elif songName == "bye":
+                if not alreadyConnected(ctx.author.voice.channel):
+                    vc = await ctx.author.voice.channel.connect()
+                    vc.play(discord.FFmpegPCMAudio('./command_sounds/cease.mp3'))
+                else:
+                    vc = clientFromChannel(ctx.author.voice.channel)
+                    if not vc.is_playing():
+                        vc.play(discord.FFmpegPCMAudio('./command_sounds/cease.mp3'))
+                return
+#-----------------------------------------------------------
+# Helper commands
+#-----------------------------------------------------------
+@bot.command(aliases=['ls'])
+async def listBoard(ctx, bd = "None"):
+    """
+    Shows the list of soundboards available.
+
+    If {board} is specified, then all clips from {board} are listed,
+    as well as their aliases.
+    """
+    if bd == "None":
+        shmsg = "Boards:\n------------------------------\n"
+        for b in boards:
+            shmsg += b + "\n"
+        await ctx.send(shmsg)
+    elif bd == "Current":
+        shmsg = "Board: "+currentBoard+"\n-------------------------\n"
+        for s in aliases:
+            shmsg += s + ' ['
+            for m in aliases[s]:
+                shmsg += m+','
+            shmsg += ']\n'
+        await ctx.send(shmsg)
+
+@bot.event
+async def on_message(message):
+    if message.content == "+help":
+        if message.author.voice is not None and not message.author.bot:
+            if not alreadyConnected(message.author.voice.channel):
+                vc = await message.author.voice.channel.connect()
+                vc.play(discord.FFmpegPCMAudio('./command_sounds/help.mp3'))
+            else:
+                vc = clientFromChannel(message.author.voice.channel)
+                if not vc.is_playing():
+                    vc.play(discord.FFmpegPCMAudio('./command_sounds/help.mp3'))
+    await bot.process_commands(message)
+
+#-----------------------------------------------------------
+# Run bot
+#-----------------------------------------------------------
+bot.run(discToken)
