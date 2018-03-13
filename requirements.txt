@@ -10,8 +10,6 @@ chardet==3.0.4
 cssselect==1.0.0
 cycler==0.10.0
 decorator==4.0.10
-discord==0.0.2
-discord.py==1.0.0a1449+g31cc4c3
 Django==2.0.1
 docutils==0.14
 flake8==3.5.0
