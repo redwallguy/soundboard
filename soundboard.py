@@ -86,6 +86,8 @@ def flushTempBan():
 @bot.event
 async def on_ready():
     switchBoardsHelper("kripp")
+    if not discord.opus.id_loaded():
+        discord.opus.load_opus()
     while True:
         flushTempBan()
         await asyncio.sleep(5)
