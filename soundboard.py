@@ -110,7 +110,7 @@ async def makeMod(ctx,member: discord.Member):
         return True
     else:
         return False
-
+#
 @bot.command()
 @commands.check(isAdmin)
 async def delMod(ctx,member: discord.Member):
