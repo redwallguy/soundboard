@@ -140,7 +140,7 @@ async def ban(ctx, member: discord.Member):
     if uid not in mods and uid not in banned and uid != overlord:
         r.lpush("banned", uid)
         banned.append(uid)
-        await ctx.send("Begone!")
+        await playHelper(ctx,"ban","command")
         return True
     else:
         return False
@@ -203,7 +203,7 @@ async def bye(ctx):
 @commands.check(isMod)
 async def switchBoards(ctx, board):
     """
-    Switches the soundboard to {board}
+    Switches the soundboard to <board>
     Only usable by mods.
     """
     switchBoardsHelper(board)
@@ -255,14 +255,22 @@ def clientFromChannel(chan):
             return client
 
 @bot.command()
+async def playf(ctx, SN):
+    """
+    Plays clip from 'favorites' board
+    """
+
+    await playHelper(ctx,SN,"favorites")
+
+@bot.command()
 async def play(ctx, SN, b="None"):
     """
-    Plays clip {SN} or any clip it is an alias of.
+    Plays clip <SN> or any clip it is an alias of.
 
     Ex. +play hellothere
         +play hello
 
-    If {b} is specified, then the clip will be searched for in board {b}.
+    If <b> is specified, then the clip will be searched for in board <b>.
     Else, it will be searched for in the current board.
 
     Ex. +play rng kripp
@@ -279,7 +287,7 @@ async def playHelper(ctx, songName, board="None"):
                             vc = await ctx.author.voice.channel.connect()
                         else:
                             vc = alreadyInVoice()
-                            vc.move_to(ctx.author.voice.channel)
+                            await vc.move_to(ctx.author.voice.channel)
                         vc.play(discord.FFmpegPCMAudio('./cache/'+song))
                     else:
                         vc = clientFromChannel(ctx.author.voice.channel)
@@ -293,7 +301,7 @@ async def playHelper(ctx, songName, board="None"):
                                 vc = await ctx.author.voice.channel.connect()
                             else:
                                 vc = alreadyInVoice()
-                                vc.move_to(ctx.author.voice.channel)
+                                await vc.move_to(ctx.author.voice.channel)
                             vc.play(discord.FFmpegPCMAudio('./cache/'+song))
                         else:
                             vc = clientFromChannel(ctx.author.voice.channel)
@@ -316,7 +324,7 @@ async def playHelper(ctx, songName, board="None"):
                                 vc = await ctx.author.voice.channel.connect()
                             else:
                                 vc = alreadyInVoice()
-                                vc.move_to(ctx.author.voice.channel)
+                                await vc.move_to(ctx.author.voice.channel)
                             s3.Bucket(bucketName).download_file(board+'/'+song,'temp3.mp3')
                             vc.play(discord.FFmpegPCMAudio('temp3.mp3'))
                         else:
@@ -332,7 +340,7 @@ async def playHelper(ctx, songName, board="None"):
                                     vc = await ctx.author.voice.channel.connect()
                                 else:
                                     vc = alreadyInVoice()
-                                    vc.move_to(ctx.author.voice.channel)
+                                    await vc.move_to(ctx.author.voice.channel)
                                 s3.Bucket(bucketName).download_file(board+'/'+song,'temp3.mp3')
                                 vc.play(discord.FFmpegPCMAudio('temp3.mp3'))
                             else:
@@ -353,13 +361,59 @@ async def playHelper(ctx, songName, board="None"):
                         vc = await ctx.author.voice.channel.connect()
                     else:
                         vc = alreadyInVoice()
-                        vc.move_to(ctx.author.voice.channel)
+                        await vc.move_to(ctx.author.voice.channel)
                     vc.play(discord.FFmpegPCMAudio('./command_sounds/help.mp3'))
                 else:
                     vc = clientFromChannel(ctx.author.voice.channel)
                     if not vc.is_playing():
                         vc.play(discord.FFmpegPCMAudio('./command_sounds/help.mp3'))
                 return
+            if songName == "ban":
+                if not alreadyConnected(ctx.author.voice.channel):
+                    if not alreadyInVoice():
+                        vc = await ctx.author.voice.channel.connect()
+                    else:
+                        vc = alreadyInVoice()
+                        await vc.move_to(ctx.author.voice.channel)
+                    vc.play(discord.FFmpegPCMAudio('./command_sounds/banneddude.mp3'))
+                else:
+                    vc = clientFromChannel(ctx.author.voice.channel)
+                    if not vc.is_playing():
+                        vc.play(discord.FFmpegPCMAudio('./command_sounds/banneddude.mp3'))
+                return
+    elif board == "favorites":
+        if ctx.author.voice is not None and not ctx.author.bot:
+            with open('./favorite/aliases.json') as f:
+                favAlis = json.load(f)
+            for song in favAlis:
+                if songName+'.mp3' == song:
+                        if not alreadyConnected(ctx.author.voice.channel):
+                            if not alreadyInVoice():
+                                vc = await ctx.author.voice.channel.connect()
+                            else:
+                                vc = alreadyInVoice()
+                                await vc.move_to(ctx.author.voice.channel)
+                            vc.play(discord.FFmpegPCMAudio('./favorite/'+song))
+                        else:
+                            vc = clientFromChannel(ctx.author.voice.channel)
+                            if not vc.is_playing():
+                                vc.play(discord.FFmpegPCMAudio('./favorite/'+song))
+                        return
+                for alias in favAlis[song]:
+                    if songName == alias:
+                        if not alreadyConnected(ctx.author.voice.channel):
+                            if not alreadyInVoice():
+                                vc = await ctx.author.voice.channel.connect()
+                            else:
+                                vc = alreadyInVoice()
+                                await vc.move_to(ctx.author.voice.channel)
+                            vc.play(discord.FFmpegPCMAudio('./favorite/'+song))
+
+                        else:
+                            vc = clientFromChannel(ctx.author.voice.channel)
+                            if not vc.is_playing():
+                                vc.play(discord.FFmpegPCMAudio('./favorite/'+song))
+                        return
 #-----------------------------------------------------------
 # Helper commands .
 #-----------------------------------------------------------
@@ -368,10 +422,8 @@ async def listBoard(ctx, bd = "None"):
     """
     Shows the list of soundboards available.
 
-    If {bd} is specified, then all clips from the current board are listed,
+    If <bd> is 'Current', then all clips from the current board are listed,
     as well as their aliases.
-
-    If
     """
     if bd == "None":
         shmsg = "Boards:\n------------------------------\n"
@@ -383,6 +435,16 @@ async def listBoard(ctx, bd = "None"):
         for s in aliases:
             shmsg += s + ' ['
             for m in aliases[s]:
+                shmsg += m+','
+            shmsg += ']\n'
+        await ctx.send(shmsg)
+    elif bd == "fav":
+        shmsg = "Favorites:\n-------------------------\n"
+        with open('./favorite/aliases.json') as f:
+            favAl = json.load(f)
+        for s in favAl:
+            shmsg += s + ' ['
+            for m in favAl[s]:
                 shmsg += m+','
             shmsg += ']\n'
         await ctx.send(shmsg)
