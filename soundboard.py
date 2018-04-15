@@ -85,7 +85,8 @@ def flushTempBan():
 
 @bot.event
 async def on_ready():
-    discord.opus.load_opus('libopus.so.0')
+    if not discord.opus.is_loaded():
+        discord.opus.load_opus('libopus.so.0')
     switchBoardsHelper("kripp")
     while True:
         flushTempBan()
