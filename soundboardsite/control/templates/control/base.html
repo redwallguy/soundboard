@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+	{% load static %}
+	<head><link rel="stylesheet" type="text/css" href="{% static "control/css/sb.css" %}"</head>
+
+	<body>
+	{% block body %}
+	<h1>Sounds of the Digest</h1>
+	<hr>
+	{% endblock %}
+
+	{% block buttons %}
+	<div id="btn_wrapper">
+	<div id="control_buttons">
+		<button type="button" id="save_button">Save</button>
+		<button type="button" id="plus_button">Add</button>
+		<button type="button" id="minus_button">Remove</button>
+	</div>
+	</div>
+	{% endblock %}
+	{% block krippface%}
+	<div id="kripp_face" style="background-image:url('{% static "control/img/kripp_face.png" %}');"></div>
+	{% endblock %}
+	<script src="{% static 'control/js/jquery-1.12.2.min.js' %}"></script>
+	</body>
+</html>

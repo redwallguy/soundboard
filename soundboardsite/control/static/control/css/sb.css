@@ -1,0 +1,60 @@
+body {
+	background-color: #f5f5dc;
+}
+
+h1 {
+	text-align: center;
+}
+
+hr {
+	width:75%;
+}
+
+label, button {
+ 	background-color: #7F9CCB;
+ 	padding: 5px 10px;
+	border-radius: 5px;
+	border: 1px ridge black;
+  	font-size: 0.8rem;
+	height: auto;
+}
+
+label:hover, button:hover {
+	background-color: #2D5BA3;
+	color: white;
+}
+
+label:active, button:active {
+	background-color: #0D3F8F;
+	color: white;
+}
+
+.fileinput {
+	opacity: 0;
+}
+
+#control_buttons button {
+	float:left;
+	margin: 20px;
+}
+
+#control_buttons {
+	display: inline-block;
+}
+
+#btn_wrapper {
+	text-align: center;
+}
+
+#kripp_face {
+	width: 100px;
+	height: 100px;
+	position: fixed;
+	background-size: contain;
+	bottom: 0;
+	right: 0;
+}
+
+ul {
+	list-style-type: none;
+}
