@@ -1,4 +1,4 @@
-{% extends base.html %}
+{% extends 'control/base.html' %}
 
 {% block body %}
 
@@ -7,10 +7,12 @@
 {% comment %}
 Use href="#!" to make text look like hyperlink but not actually do anything (Make sure there is no element with id="!" though!!!)
 {% endcomment %}
-<ul>
+<table border="1">
 	{% for board in boards %}
-	<li><a href="/board/{{board.name}}">{{board.name}}</a></li>
+	<tr>
+		<td><div class="sbcover" style="background-image:url('{{board.cover.url}}')"></div></td>
+		<td><a href="boards/{{board.name}}">{{board.name}}</a></td>
+	</tr>
 	{% endfor %}
-</ul>
-
+</table>
 {% endblock %}

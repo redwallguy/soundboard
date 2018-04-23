@@ -38,7 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'control',
-    'storages'
+    'storages',
+    'constrainedfilefield'
 ]
 
 MIDDLEWARE = [
@@ -124,6 +125,7 @@ AWS_QUERYSTRING_AUTH = False
 AWS_HEADERS = {
   'Cache-Control': 'max-age=86400',
 }
+AWS_STORAGE_BUCKET_NAME = 'digestsoundboard'
 
 # Configure Django App for Heroku.
 django_heroku.settings(locals())

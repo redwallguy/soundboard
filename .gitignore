@@ -4,3 +4,4 @@ Procfile.dev
 test
 *.pyc
 sbpy
+ali.json

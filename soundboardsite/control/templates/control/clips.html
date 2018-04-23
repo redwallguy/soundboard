@@ -1,0 +1,33 @@
+{% extends 'control/base.html' %}
+
+{% block body %}
+<h1>{{board.name}}</h1>
+<div class="sbcover" style="margin-right:auto;margin-left:auto;background-image:url('{{board.cover.url}}')"></div>
+<hr>
+<table border="1">
+	<tr>
+		<th>Clip Name</th>
+		<th>Aliases</th>
+		<th></th>
+	{% for clip in clips %}
+	<tr>
+		<td>{{clip.name}}</td>
+		<td>
+			{%for key, value in aliases.items %}
+			{% if key == clip.name %}
+				{% for alias in value %}
+				{{alias.name}}<br/>
+				{% endfor %}
+			{% endif %}
+			{% endfor %}
+		</td>
+		<td>
+			<audio controls>
+				<source src={{clip.sound.url}} type="audio/mpeg">
+			No audio in dis browser lul
+			</audio>
+		</td>
+	</tr>
+	{% endfor %}
+</table>
+{% endblock %}

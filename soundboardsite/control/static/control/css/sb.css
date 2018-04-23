@@ -51,10 +51,24 @@ label:active, button:active {
 	height: 100px;
 	position: fixed;
 	background-size: contain;
+	background-repeat: no-repeat;
 	bottom: 0;
 	right: 0;
 }
 
-ul {
-	list-style-type: none;
+.sbcover {
+	width:100px;
+	height:100px;
+	background-size: 100% 100%;
+	background-repeat: no-repeat;
+}
+
+td:nth-child(2) {
+	text-align:center;
+	width:300px;
+}
+
+table {
+	margin-left: auto;
+	margin-right: auto;
 }
