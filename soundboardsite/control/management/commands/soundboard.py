@@ -141,12 +141,18 @@ class Command(BaseCommand):
             Ban member.
             Only usable by mods.
             """
-            #use CEASE from Elohim
             uid = member.id
             if uid not in mods and uid not in banned and uid != overlord:
                 r.lpush("banned", uid)
                 banned.append(uid)
-                await playHelper(ctx,"ban","command")
+                if message.author.voice is not None and not message.author.bot:
+                    if not alreadyConnected(message.author.voice.channel):
+                        vc = await message.author.voice.channel.connect()
+                        vc.play(discord.FFmpegPCMAudio('./command_sounds/banneddude.mp3'))
+                    else:
+                        vc = clientFromChannel(message.author.voice.channel)
+                        if not vc.is_playing():
+                            vc.play(discord.FFmpegPCMAudio('./command_sounds/banneddude.mp3'))
                 return True
             else:
                 return False
