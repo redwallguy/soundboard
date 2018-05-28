@@ -19,6 +19,20 @@ class Command(BaseCommand):
 
             def changeCurrent(self, board):
                 self.currentBoard = board
+        class spamState:
+            def __init__(self):
+                self.spam_dict = {}
+
+            def incrSpam(self, authId):
+                if authId not in self.spam_dict:
+                    self.spam_dict[authId] = 1
+                elif self.spam_dict[authId] < 5:
+                    self.spam_dict[authId] += 1
+                else:
+                    self.spam_dict = 5
+
+            def flush(self):
+                self.spam_dict = {}
         #-----------------------------------------------------------
         # Variable imports and client initializations
         #-----------------------------------------------------------
@@ -31,8 +45,7 @@ class Command(BaseCommand):
         mods = [int(x) for x in r.lrange("mods",0,-1)]
         banned = [int(x) for x in r.lrange("banned",0,-1)]
         curbd = boardState()
-
-        spam_dict = {}
+        spamOb = spamState()
 
         #-----------------------------------------------------------
         # Helper functions and checks
@@ -70,23 +83,14 @@ class Command(BaseCommand):
             if ctx.author.id == overlord:
                 return True
             else:
-                if ctx.author.id in spam_dict:
-                    if spam_dict[ctx.author.id] == 5:
+                if ctx.author.id in spamOb.spam_dict:
+                    if spamOb.spam_dict[ctx.author.id] == 5:
                         return False
                 return True
                 
         @bot.event
         async def on_command(ctx):
-            if ctx.author.id not in spam_dict:
-                spam_dict[ctx.author.id] = 1
-            else:
-                spam_dict[ctx.author.id] += 1
-                if spam_dict[ctx.author.id] > 5:
-                    spam_dict[ctx.author.id] = 5
-
-        def flushTempBan():
-            global spam_dict
-            spam_dict={}
+            spamOb.incrSpam(ctx.author.id)
 
         @bot.event
         async def on_ready():
@@ -94,7 +98,7 @@ class Command(BaseCommand):
                 discord.opus.load_opus('libopus.so.0')
             switchBoardsHelper("kripp")
             while True:
-                flushTempBan()
+                spamOb.flush()
                 await asyncio.sleep(5)
 
         #-----------------------------------------------------------
