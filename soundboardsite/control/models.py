@@ -46,10 +46,11 @@ class Alias(models.Model):
     name = models.CharField(max_length=15)
     clip = models.ForeignKey(Clip,on_delete=models.CASCADE)
 
-    def validate_unique(self):
-        if self__class__.objects.filter(clip__board__name=
+    def validate_unique(self, *args, **kwargs):
+        super(Alias, self).validate_unique(*args,**kwargs)
+        if self.__class__.objects.filter(clip__board__name=
                                         self.clip.board.name,name=
-                                        self.name):
+                                        self.name).exists():
             raise ValidationError(
                 {
                     NON_FIELD_ERRORS: [
