@@ -5,3 +5,5 @@ test
 *.pyc
 sbpy
 ali.json
+req2.txt
+staticfiles

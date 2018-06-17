@@ -1,6 +1,8 @@
 from django.db import models
 import storages.backends.s3boto3
 from constrainedfilefield.fields import ConstrainedFileField
+from django.core.exceptions import ValidationError
+from django.core.exceptions import NON_FIELD_ERRORS
 
 protected_storage = storages.backends.s3boto3.S3Boto3Storage(
   acl='private',
@@ -41,8 +43,20 @@ class Clip(models.Model):
         unique_together = ("name","board")
 
 class Alias(models.Model):
-    name = models.CharField(max_length=15,primary_key=True)
+    name = models.CharField(max_length=15)
     clip = models.ForeignKey(Clip,on_delete=models.CASCADE)
+
+    def validate_unique(self):
+        if self__class__.objects.filter(clip__board__name=
+                                        self.clip.board.name,name=
+                                        self.name):
+            raise ValidationError(
+                {
+                    NON_FIELD_ERRORS: [
+                        'Alias with same name already exists in this board.'
+                        ],
+                }
+            )
 
     def __str__(self):
         return self.name
