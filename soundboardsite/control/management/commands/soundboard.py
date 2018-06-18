@@ -151,24 +151,24 @@ class Command(BaseCommand):
                 mods.remove(uid)
                 r.lpush("banned",uid)
                 banned.append(uid)
-                if message.author.voice is not None and not message.author.bot:
-                    if not alreadyConnected(message.author.voice.channel):
-                        vc = await message.author.voice.channel.connect()
+                if ctx.author.voice is not None and not ctx.author.bot:
+                    if not alreadyConnected(ctx.author.voice.channel):
+                        vc = await ctx.author.voice.channel.connect()
                         vc.play(discord.FFmpegPCMAudio('./command_sounds/banneddude.mp3'))
                     else:
-                        vc = clientFromChannel(message.author.voice.channel)
+                        vc = clientFromChannel(ctx.author.voice.channel)
                         if not vc.is_playing():
                             vc.play(discord.FFmpegPCMAudio('./command_sounds/banneddude.mp3'))
                 return True
             elif uid not in banned:
                 r.lpush("banned",uid)
                 banned.append(uid)
-                if message.author.voice is not None and not message.author.bot:
-                    if not alreadyConnected(message.author.voice.channel):
-                        vc = await message.author.voice.channel.connect()
+                if ctx.author.voice is not None and not ctx.author.bot:
+                    if not alreadyConnected(ctx.author.voice.channel):
+                        vc = await ctx.author.voice.channel.connect()
                         vc.play(discord.FFmpegPCMAudio('./command_sounds/banneddude.mp3'))
                     else:
-                        vc = clientFromChannel(message.author.voice.channel)
+                        vc = clientFromChannel(ctx.author.voice.channel)
                         if not vc.is_playing():
                             vc.play(discord.FFmpegPCMAudio('./command_sounds/banneddude.mp3'))
                 return True
