@@ -115,9 +115,8 @@ class Command(BaseCommand):
             """
             uid = member.id
             if uid not in mods:
-                r.lpush("discord_mods",uid)
+                r.lpush("mods",uid)
                 mods.append(uid)
-                await ctx.send("Come, and dine with gods.")
                 return True
             else:
                 return False
@@ -131,9 +130,8 @@ class Command(BaseCommand):
             """
             uid = member.id
             if uid in mods:
-                r.lrem("discord_mods", uid)
+                r.lrem("mods", uid)
                 mods.remove(uid)
-                await ctx.send("How the mighty have fallen...")
                 return True
             else:
                 return False
@@ -146,20 +144,34 @@ class Command(BaseCommand):
             Only usable by mods.
             """
             uid = member.id
-            if uid not in mods and uid not in banned and uid != overlord:
-                r.lpush("banned", uid)
+            if uid == overlord:
+                return False
+            elif uid in mods and isAdmin(ctx):
+                r.lrem("mods",uid)
+                mods.remove(uid)
+                r.lpush("banned",uid)
                 banned.append(uid)
                 if message.author.voice is not None and not message.author.bot:
                     if not alreadyConnected(message.author.voice.channel):
                         vc = await message.author.voice.channel.connect()
-                        vc.play(discord.FFmpegPCMAudio('../../../../command_sounds/banneddude.mp3'))
+                        vc.play(discord.FFmpegPCMAudio('./command_sounds/banneddude.mp3'))
                     else:
                         vc = clientFromChannel(message.author.voice.channel)
                         if not vc.is_playing():
-                            vc.play(discord.FFmpegPCMAudio('../../../../command_sounds/banneddude.mp3'))
+                            vc.play(discord.FFmpegPCMAudio('./command_sounds/banneddude.mp3'))
                 return True
-            else:
-                return False
+            elif uid not in banned:
+                r.lpush("banned",uid)
+                banned.append(uid)
+                if message.author.voice is not None and not message.author.bot:
+                    if not alreadyConnected(message.author.voice.channel):
+                        vc = await message.author.voice.channel.connect()
+                        vc.play(discord.FFmpegPCMAudio('./command_sounds/banneddude.mp3'))
+                    else:
+                        vc = clientFromChannel(message.author.voice.channel)
+                        if not vc.is_playing():
+                            vc.play(discord.FFmpegPCMAudio('./command_sounds/banneddude.mp3'))
+                return True
 
         @bot.command()
         @commands.check(isMod)
