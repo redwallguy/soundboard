@@ -7,6 +7,7 @@ import redis
 import json
 import shutil
 import re
+import json
 import control.models as models
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.management.base import BaseCommand
@@ -33,6 +34,36 @@ class Command(BaseCommand):
 
             def flush(self):
                 self.spam_dict = {}
+        class introState:
+            def __init__(self, introDict={}):
+                self.introDict = introDict
+
+            def changeIntro(self, uid, songName=None, board=None):
+                uid = str(uid)
+                if songName is not None:
+                    self.introDict[uid] = {"songName": songName, "board": board}
+                else:
+                    if uid in self.introDict:
+                        self.introDict.pop(uid)
+
+            def getIntro(self, uid):
+                uid = str(uid)
+                if uid in self.introDict:
+                    return self.introDict[uid]
+
+            def getIntroStr(self, uid):
+                uid = str(uid)
+                if uid in self.introDict:
+                    introStr = "Your intro is " +\
+                               self.introDict[uid]["songName"] +\
+                               " from the " + self.introDict[uid]["board"] +\
+                               " board."
+                    return introStr
+                else:
+                    return "You have no intro at this time."
+
+            def sendToRedis(self, r):
+                r.set("intros",json.dumps(self.introDict))
         #-----------------------------------------------------------
         # Variable imports and client initializations
         #-----------------------------------------------------------
@@ -44,6 +75,7 @@ class Command(BaseCommand):
         overlord = int(r.get("discord_admin"))
         mods = [int(x) for x in r.lrange("mods",0,-1)]
         banned = [int(x) for x in r.lrange("banned",0,-1)]
+        introSt = introState(json.loads(r.get("intros")))
         curbd = boardState()
         spamOb = spamState()
 
@@ -392,6 +424,115 @@ class Command(BaseCommand):
                         if not vc.is_playing():
                             vc.play(discord.FFmpegPCMAudio('./command_sounds/help.mp3'))
             await bot.process_commands(message)
+
+        #-----------------------------------------------------------
+        #Voice join intro functions
+        #-----------------------------------------------------------
+        async def clipExists(songName, board):
+            boards = getBoards()
+            b_to_search = boards.get(name__exact=board)
+            clip_set = b_to_search.clip_set.all()
+            try:
+                song = clip_set.get(name__exact=songName)
+                return True
+            except ObjectDoesNotExist:
+                print("Name does not match, searching aliases...")
+                try:
+                    aliConn = models.Alias.objects.all().get(name__exact=
+                                                             songName,
+                                                             clip__board__name__exact=
+                                                             board)
+                    return True
+                except ObjectDoesNotExist:
+                    print("No aliases match on specified board")
+                    return False
+
+        @bot.command()
+        async def setIntro(ctx, songName, board):
+            """
+            Sets an intro from the soundboard that plays whenever you
+            enter a voice channel.
+            """
+            if clipExists(songName, board):
+                introSt.changeIntro(ctx.author.id, songName, board)
+                introSt.sendToRedis(r)
+                await ctx.send("Success")
+            else:
+                await ctx.send("That clip does not exist. Rip.")
+
+        @bot.command()
+        async def remIntro(ctx):
+            """
+            Removes your intro.
+            """
+            introSt.changeIntro(ctx.author.id)
+            introSt.sendToRedis(r)
+
+        @bot.command()
+        async def myIntro(ctx):
+            """
+            Returns your intro.
+            """
+            await ctx.send(introSt.getIntroStr(ctx.author.id))
+
+        
+        @bot.event
+        async def on_voice_state_update(member, before, after):
+            print("VSU 1")
+            goAhead = False
+            if before is None and after.channel.guild in bot.guilds and introSt.getIntro(member.id) is not None:
+                goAhead = True
+            else:
+                try:
+                    if before.channel is None and after.channel.guild in bot.guilds and introSt.getIntro(member.id) is not None:
+                        goAhead = True
+                except:
+                    pass
+            if goAhead:
+                board = introSt.getIntro(member.id)["board"]
+                songName = introSt.getIntro(member.id)["songName"]
+                boards = getBoards()
+                if not member.bot:
+                    b_to_search = boards.get(name__exact=board)
+                    clip_set = b_to_search.clip_set.all()
+                    try:
+                        song = clip_set.get(name__exact=songName)
+                        songUrl = song.sound.url
+                        if not alreadyConnected(member.voice.channel):
+                            if not alreadyInVoice():
+                                vc = await member.voice.channel.connect()
+                            else:
+                                vc = alreadyInVoice()
+                                await vc.move_to(member.voice.channel)
+                            vc.play(discord.FFmpegPCMAudio(songUrl))
+                        else:
+                            vc = clientFromChannel(member.voice.channel)
+                            if not vc.is_playing():
+                                vc.play(discord.FFmpegPCMAudio(songUrl))
+                        return
+                    except ObjectDoesNotExist:
+                        print("Name does not match, searching aliases...")
+                        try:
+                            aliConn = models.Alias.objects.all().get(name__exact=
+                                                                     songName,
+                                                                     clip__board__name__exact=
+                                                                     board)
+                            songUrl = aliConn.clip.sound.url
+                            if not alreadyConnected(member.voice.channel):
+                                if not alreadyInVoice():
+                                    vc = await member.voice.channel.connect()
+                                else:
+                                    vc = alreadyInVoice()
+                                    await vc.move_to(member.voice.channel)
+                                vc.play(discord.FFmpegPCMAudio(songUrl))
+                            else:
+                                vc = clientFromChannel(member.voice.channel)
+                                if not vc.is_playing():
+                                    vc.play(discord.FFmpegPCMAudio(songUrl))
+                            return
+                        except ObjectDoesNotExist:
+                            print("No aliases match on specified board")
+                            return
         #-----------------------------------------------------------
         # Run bot
         #-----------------------------------------------------------
