@@ -2,15 +2,12 @@ import discord
 import asyncio
 import os
 from discord.ext import commands
-import boto3
 import redis
-import json
-import shutil
-import re
 import json
 import control.models as models
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.management.base import BaseCommand
+
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
@@ -79,9 +76,10 @@ class Command(BaseCommand):
         curbd = boardState()
         spamOb = spamState()
 
-        #-----------------------------------------------------------
         # Helper functions and checks
-        #-----------------------------------------------------------
+        #
+        #
+        #
         async def isMod(ctx):
             if ctx.author.id in mods or ctx.author.id == overlord:
                 return True
@@ -95,10 +93,10 @@ class Command(BaseCommand):
             return models.Board.objects.all()
             
 
-        #-----------------------------------------------------------
-        # Spam prevention
-        #-----------------------------------------------------------
-        #Look at @cooldown decorator for future bots
+        #Spam prevention
+        #
+        #
+        #
         @bot.check
         async def notBanned(ctx):
             if ctx.author.id in banned and ctx.author.id != overlord:
@@ -133,11 +131,10 @@ class Command(BaseCommand):
                 spamOb.flush()
                 await asyncio.sleep(5)
 
-        #-----------------------------------------------------------
         # Bot commands (Administrative)
-        #-----------------------------------------------------------
-        #change to make play Elohim quotes on command (pass ctx?)
-
+        #
+        #
+        #
         @bot.command()
         @commands.check(isAdmin)
         async def makeMod(ctx,member: discord.Member):
@@ -249,9 +246,10 @@ class Command(BaseCommand):
         async def ping(ctx):
             await ctx.send("pong")
 
-        #-----------------------------------------------------------
         # Bot commands and helper functions (audio)
-        #-----------------------------------------------------------
+        #
+        #
+        #
         @bot.command()
         @commands.check(isMod)
         async def bye(ctx):
@@ -270,14 +268,17 @@ class Command(BaseCommand):
             Switches the soundboard to <board>
             Only usable by mods.
             """
-            switchBoardsHelper(board)
-            await ctx.send("Board switched to " + board)
+            if switchBoardsHelper(board):
+                await ctx.send("Board switched to " + board)
 
         def switchBoardsHelper(board):
             boards = getBoards()
             if boards.filter(name__exact=board).exists():
                 curbd.changeCurrent(board)
                 print("Board switched to " + curbd.currentBoard)
+                return True
+            else:
+                return False
                 
         def alreadyConnected(vc):
             for client in bot.voice_clients:
@@ -302,12 +303,12 @@ class Command(BaseCommand):
             Plays clip from 'favorites' board
             """
 
-            await playHelper(ctx,SN,"fav")
+            await playHelper(ctx.author,SN,"fav")
 
         @bot.command()
-        async def play(ctx, SN, b=None):
+        async def play(ctx, songName, b=None):
             """
-            Plays clip <SN> or any clip it is an alias of.
+            Plays clip <songName> or any clip it is an alias of.
 
             Ex. +play hellothere
                 +play hello
@@ -319,29 +320,32 @@ class Command(BaseCommand):
             """
             if b is None:
                 b=curbd.currentBoard
-            await playHelper(ctx,SN,b)
+            if await playHelper(ctx.author,songName,b):
+                return
+            else:
+                ctx.send("Only humans in voice channels accepted here.")
                         
-        async def playHelper(ctx, songName, board):
+        async def playHelper(member, songName, board):
             boards = getBoards()
             print(board)
-            if ctx.author.voice is not None and not ctx.author.bot:
+            if member.voice is not None and not member.bot:
                 b_to_search = boards.get(name__exact=board)
                 clip_set = b_to_search.clip_set.all()
                 try:
                     song = clip_set.get(name__exact=songName)
                     songUrl = song.sound.url
-                    if not alreadyConnected(ctx.author.voice.channel):
+                    if not alreadyConnected(member.voice.channel):
                         if not alreadyInVoice():
-                            vc = await ctx.author.voice.channel.connect()
+                            vc = await member.voice.channel.connect()
                         else:
                             vc = alreadyInVoice()
-                            await vc.move_to(ctx.author.voice.channel)
+                            await vc.move_to(member.voice.channel)
                         vc.play(discord.FFmpegPCMAudio(songUrl))
                     else:
-                        vc = clientFromChannel(ctx.author.voice.channel)
+                        vc = clientFromChannel(member.voice.channel)
                         if not vc.is_playing():
                             vc.play(discord.FFmpegPCMAudio(songUrl))
-                    return
+                    return True
                 except ObjectDoesNotExist:
                     print("Name does not match, searching aliases...")
                     try:
@@ -350,24 +354,23 @@ class Command(BaseCommand):
                                                                  clip__board__name__exact=
                                                                  board)
                         songUrl = aliConn.clip.sound.url
-                        if not alreadyConnected(ctx.author.voice.channel):
+                        if not alreadyConnected(member.voice.channel):
                             if not alreadyInVoice():
-                                vc = await ctx.author.voice.channel.connect()
+                                vc = await member.voice.channel.connect()
                             else:
                                 vc = alreadyInVoice()
-                                await vc.move_to(ctx.author.voice.channel)
+                                await vc.move_to(member.voice.channel)
                             vc.play(discord.FFmpegPCMAudio(songUrl))
                         else:
-                            vc = clientFromChannel(ctx.author.voice.channel)
+                            vc = clientFromChannel(member.voice.channel)
                             if not vc.is_playing():
                                 vc.play(discord.FFmpegPCMAudio(songUrl))
-                        return
+                        return True
                     except ObjectDoesNotExist:
                         print("No aliases match on specified board")
-                        return
+                        return True
             else:
-                await ctx.send("Only humans in voice channels accepted here")
-                return
+                return False
         #-----------------------------------------------------------
         # Helper commands .
         #-----------------------------------------------------------
@@ -425,9 +428,11 @@ class Command(BaseCommand):
                             vc.play(discord.FFmpegPCMAudio('./command_sounds/help.mp3'))
             await bot.process_commands(message)
 
-        #-----------------------------------------------------------
+
         #Voice join intro functions
-        #-----------------------------------------------------------
+        #
+        #
+        #
         async def clipExists(songName, board):
             boards = getBoards()
             b_to_search = boards.get(name__exact=board)
@@ -491,50 +496,12 @@ class Command(BaseCommand):
             if goAhead:
                 board = introSt.getIntro(member.id)["board"]
                 songName = introSt.getIntro(member.id)["songName"]
-                boards = getBoards()
-                if not member.bot:
-                    b_to_search = boards.get(name__exact=board)
-                    clip_set = b_to_search.clip_set.all()
-                    try:
-                        song = clip_set.get(name__exact=songName)
-                        songUrl = song.sound.url
-                        if not alreadyConnected(member.voice.channel):
-                            if not alreadyInVoice():
-                                vc = await member.voice.channel.connect()
-                            else:
-                                vc = alreadyInVoice()
-                                await vc.move_to(member.voice.channel)
-                            vc.play(discord.FFmpegPCMAudio(songUrl))
-                        else:
-                            vc = clientFromChannel(member.voice.channel)
-                            if not vc.is_playing():
-                                vc.play(discord.FFmpegPCMAudio(songUrl))
-                        return
-                    except ObjectDoesNotExist:
-                        print("Name does not match, searching aliases...")
-                        try:
-                            aliConn = models.Alias.objects.all().get(name__exact=
-                                                                     songName,
-                                                                     clip__board__name__exact=
-                                                                     board)
-                            songUrl = aliConn.clip.sound.url
-                            if not alreadyConnected(member.voice.channel):
-                                if not alreadyInVoice():
-                                    vc = await member.voice.channel.connect()
-                                else:
-                                    vc = alreadyInVoice()
-                                    await vc.move_to(member.voice.channel)
-                                vc.play(discord.FFmpegPCMAudio(songUrl))
-                            else:
-                                vc = clientFromChannel(member.voice.channel)
-                                if not vc.is_playing():
-                                    vc.play(discord.FFmpegPCMAudio(songUrl))
-                            return
-                        except ObjectDoesNotExist:
-                            print("No aliases match on specified board")
-                            return
-        #-----------------------------------------------------------
+                await playHelper(member, songName, board)
+
+
         # Run bot
-        #-----------------------------------------------------------
+        #
+        #
+        #
         bot.run(discToken)
 
