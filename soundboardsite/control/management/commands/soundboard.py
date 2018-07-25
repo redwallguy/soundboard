@@ -5,6 +5,7 @@ from discord.ext import commands
 import redis
 import json
 import control.models as models
+import time
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.management.base import BaseCommand
 
@@ -13,7 +14,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         class boardState:
             def __init__(self):
-                self.currentBoard = ""
+                self.currentBoard = "kripp"
 
             def changeCurrent(self, board):
                 self.currentBoard = board
@@ -61,9 +62,11 @@ class Command(BaseCommand):
 
             def sendToRedis(self, r):
                 r.set("intros",json.dumps(self.introDict))
-        #-----------------------------------------------------------
+
         # Variable imports and client initializations
-        #-----------------------------------------------------------
+        #
+        #
+        #
         discToken = os.environ.get('DISCORD_TOKEN')
 
         bot = commands.Bot(command_prefix='+')
@@ -126,7 +129,6 @@ class Command(BaseCommand):
         async def on_ready():
             if not discord.opus.is_loaded():
                 discord.opus.load_opus('libopus.so.0')
-            switchBoardsHelper("kripp")
             while True:
                 spamOb.flush()
                 await asyncio.sleep(5)
@@ -503,5 +505,11 @@ class Command(BaseCommand):
         #
         #
         #
-        bot.run(discToken)
+        while True:
+            try:
+                bot.run(discToken)
+            except Exception as e:
+                print(e)
+                time.sleep(60)
+
 

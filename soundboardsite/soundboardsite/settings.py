@@ -125,7 +125,7 @@ AWS_QUERYSTRING_AUTH = False
 AWS_HEADERS = {
   'Cache-Control': 'max-age=86400',
 }
-AWS_STORAGE_BUCKET_NAME = 'digestsoundboard'
+AWS_STORAGE_BUCKET_NAME = 'digestsoundboard' #Required here in settings file NOT env var
 
 # Configure Django App for Heroku.
 django_heroku.settings(locals())
