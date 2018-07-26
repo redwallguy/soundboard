@@ -57,7 +57,7 @@ class Alias(models.Model):
 
 class DiscordAppUser(models.Model):
     user_hash = models.CharField(max_length=64,primary_key=True)
-    discord_id = models.IntegerField()
+    token = models.CharField(max_length=64,default="")
 
     def __str__(self):
         return self.user_hash

@@ -244,10 +244,6 @@ class Command(BaseCommand):
                 banmsg += banmem.name + "\n"
             await ctx.send(banmsg)
 
-        @bot.command()
-        async def ping(ctx):
-            await ctx.send("pong")
-
         # Bot commands and helper functions (audio)
         #
         #
@@ -258,10 +254,9 @@ class Command(BaseCommand):
             """
             Disconnects bot from voice channel user is in
             """
-            if ctx.author.voice is not None:
-                if alreadyConnected(ctx.author.voice.channel):
-                    vc = clientFromChannel(ctx.author.voice.channel)
-                    await vc.disconnect()
+            if alreadyInVoice() is not None:
+                vc = alreadyInVoice()
+                await vc.disconnect()
 
         @bot.command(aliases=['sb','switch'])
         @commands.check(isMod)
@@ -281,7 +276,7 @@ class Command(BaseCommand):
                 return True
             else:
                 return False
-                
+
         def alreadyConnected(vc):
             for client in bot.voice_clients:
                 if vc == client.channel:
@@ -373,9 +368,11 @@ class Command(BaseCommand):
                         return True
             else:
                 return False
-        #-----------------------------------------------------------
-        # Helper commands .
-        #-----------------------------------------------------------
+
+        # Helper commands
+        #
+        #
+        #
         @bot.command(aliases=['ls'])
         async def listBoard(ctx, bd=None):
             """
@@ -500,6 +497,19 @@ class Command(BaseCommand):
                 songName = introSt.getIntro(member.id)["songName"]
                 await playHelper(member, songName, board)
 
+        #Milton app commands
+        #
+        #
+        #
+        @bot.command(hidden=True)
+        async def milton(ctx, clip, board, discid):
+            for guild in bot.guilds:
+                member = discord.utils.get(guild.members, id=discid)
+                if member is not None and member.voice is not None:
+                    break
+            if member is not None and member.voice is not None:
+                playHelper(member, clip, board)
+
 
         # Run bot
         #
@@ -512,4 +522,4 @@ class Command(BaseCommand):
                 print(e)
                 time.sleep(60)
 
-
+#TODO convert command_sounds into playHelper paradigm, make commandsounds board which is locked from all but superuser
