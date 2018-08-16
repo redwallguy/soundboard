@@ -55,9 +55,12 @@ class Alias(models.Model):
     def __str__(self):
         return self.name
 
-class DiscordAppUser(models.Model):
-    user_hash = models.CharField(max_length=64,primary_key=True)
+class AppUser(models.Model):
+    user = models.CharField(max_length=64, primary_key=True)
+    password = models.CharField(max_length=64)
     token = models.CharField(max_length=64,default="")
+    refresh_token = models.CharField(max_length=64,default="")
+    token_time = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.user_hash
+        return self.user

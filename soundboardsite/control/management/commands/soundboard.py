@@ -502,7 +502,7 @@ class Command(BaseCommand):
         #
         #
         @bot.command(hidden=True)
-        async def milton(ctx, clip, board, discid):
+        async def milton(ctx, clip, board, discid: int):
             for guild in bot.guilds:
                 member = discord.utils.get(guild.members, id=discid)
                 if member is not None and member.voice is not None:

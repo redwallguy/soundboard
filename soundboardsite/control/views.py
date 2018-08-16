@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from .models import *
 import requests
 import os
-from .milton_script.milton import *
+import json
 
 def boards(request):
     board_list = Board.objects.all()
@@ -25,14 +25,17 @@ def index(request):
 
 def authstate(request):
     if request.method == 'POST' and 'state' in request.POST:
-        user_hash = request.POST['state']
-        u = DiscordAppUser(user_hash=user_hash)
+        user = request.POST['state']
+        u = AppUser(user=user)
         u.save()
+
+def auth(request):
+    return
 
 def authcode(request):
     if request.method == 'GET' and 'state' in request.GET:
-        hash_to_check = request.GET['state']
-        if DiscordAppUser.objects.filter(user_hash=hash_to_check).exists() and 'code' in request.GET:
+        u_to_check = request.GET['state']
+        if AppUser.objects.filter(user=u_to_check).exists() and 'code' in request.GET:
             code = request.GET['code']
             client_id = os.environ.get('DISCORD_CLIENT_ID')
             client_secret = os.environ.get('DISCORD_CLIENT_SECRET')
@@ -54,12 +57,27 @@ def authcode(request):
             r.raise_for_status()
             result = r.json()
 
-            u = DiscordAppUser.objects.filter(user_hash=hash_to_check)
-            #GET req to disc api to find @me id and store
+            u = AppUser.objects.get(user=u_to_check)
+            u.token = result["access_token"]
+            u.refresh_token = result["refresh_token"]
             u.save()
+
 
 def callmilton(request):
     if request.method == 'POST' and 'state' in request.POST:
+        pass #TODO finish call logic
+
+def api(request):
+    if request.method == 'GET':
+        board_manager = Board.objects.all()
+        bds = {}
+        for bd in board_manager:
+            board_clips = bd.clip_set.all()
+            bds[bd.name] = []
+            for clip in board_clips:
+                bds[bd.name].append(clip.name)
+        bds_json = json.dumps(bds)
+        return HttpResponse(content=bds_json,content_type='application/json')
 
 
 

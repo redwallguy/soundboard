@@ -6,5 +6,6 @@ urlpatterns = [
     re_path(r'^boards/(?P<spec_board>\w{1,20})/$',
             views.clips_of_board, name='clips'),
     path('auth', views.auth, name="auth"),
+    path('api',views.api, name='api'),
     
 ]
