@@ -1,11 +1,13 @@
 from django.urls import path, re_path
-from . import views
+from . import boardviews
+from . import apiviews
+from . import authviews
 
 urlpatterns = [
-    path('', views.boards, name='boards'),
+    path('', boardviews.boards, name='boards'),
     re_path(r'^boards/(?P<spec_board>\w{1,20})/$',
-            views.clips_of_board, name='clips'),
-    path('auth', views.auth, name="auth"),
-    path('api',views.api, name='api'),
+            boardviews.clips_of_board, name='clips'),
+    path('auth', authviews.auth, name="auth"),
+    path('api',apiviews.api, name='api'),
     
 ]

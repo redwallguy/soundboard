@@ -482,7 +482,6 @@ class Command(BaseCommand):
         
         @bot.event
         async def on_voice_state_update(member, before, after):
-            print("VSU 1")
             goAhead = False
             if before is None and after.channel.guild in bot.guilds and introSt.getIntro(member.id) is not None:
                 goAhead = True
@@ -503,6 +502,10 @@ class Command(BaseCommand):
         #
         @bot.command(hidden=True)
         async def milton(ctx, clip, board, discid: int):
+            try:
+                idcheck = ctx.message.webhook_id
+            except AttributeError:
+                return
             for guild in bot.guilds:
                 member = discord.utils.get(guild.members, id=discid)
                 if member is not None and member.voice is not None:
