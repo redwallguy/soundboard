@@ -499,7 +499,7 @@ class Command(BaseCommand):
                 songName = introSt.getIntro(member.id)["songName"]
                 await playHelper(member, songName, board)
 
-            if num_in_voice(member.guild) == 1 and alreadyInVoice() is not None:
+            if await num_in_voice(member.guild) == 1 and alreadyInVoice() is not None:
                 await alreadyInVoice().disconnect()
 
             #TODO add command sound for "now it's a party" or something and trigger it if numvoice == 10

@@ -3,7 +3,6 @@ from django.http import HttpResponse
 from .models import *
 import requests
 import os
-from .milton_script.milton import *
 
 def boards(request):
     board_list = Board.objects.all()
