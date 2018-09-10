@@ -516,15 +516,9 @@ class Command(BaseCommand):
         #
         #
         @bot.command(hidden=True)
-<<<<<<< HEAD
-        async def milton(ctx, clip, board, discid: int):
-            try:
-                idcheck = ctx.message.webhook_id
-=======
         async def milton(ctx, clip, board, discid):
             try:
                 web_id = ctx.webhook_id
->>>>>>> master
             except AttributeError:
                 return
             for guild in bot.guilds:
