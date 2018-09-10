@@ -9,5 +9,4 @@ urlpatterns = [
             boardviews.clips_of_board, name='clips'),
     path('auth', authviews.auth, name="auth"),
     path('api',apiviews.api, name='api'),
-    
 ]

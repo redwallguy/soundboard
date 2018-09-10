@@ -60,8 +60,8 @@ class Command(BaseCommand):
                 else:
                     return "You have no intro at this time."
 
-            def sendToRedis(self, r):
-                r.set("intros",json.dumps(self.introDict))
+            def sendToRedis(self, red):
+                red.set("intros",json.dumps(self.introDict))
 
         # Variable imports and client initializations
         #
@@ -252,11 +252,10 @@ class Command(BaseCommand):
         @commands.check(isMod)
         async def bye(ctx):
             """
-            Disconnects bot from voice channel user is in
+            Disconnects bot from voice.
             """
             if alreadyInVoice() is not None:
-                vc = alreadyInVoice()
-                await vc.disconnect()
+                await alreadyInVoice().disconnect()
 
         @bot.command(aliases=['sb','switch'])
         @commands.check(isMod)
@@ -266,6 +265,7 @@ class Command(BaseCommand):
             Only usable by mods.
             """
             if switchBoardsHelper(board):
+                await listBoardHelper(ctx, board)
                 await ctx.send("Board switched to " + board)
 
         def switchBoardsHelper(board):
@@ -381,14 +381,17 @@ class Command(BaseCommand):
             If <bd> is '-c', then all clips from the current board are listed,
             as well as their aliases.
             """
-            if bd is None:
+            await listBoardHelper(ctx,bd)
+
+        async def listBoardHelper(ctx, board):
+            if board is None:
                 shmsg="Boards\n--------------------\n"
                 boards = getBoards()
                 for b in boards:
                     shmsg+=b.name+"\n"
                 await ctx.send(shmsg)
                 return
-            elif bd=="-c":
+            elif board=="-c":
                 shmsg=curbd.currentBoard+"\n----------------\n"
                 boards=getBoards()
                 b_to_cycle=boards.get(name__exact=curbd.currentBoard)
@@ -400,10 +403,10 @@ class Command(BaseCommand):
                 await ctx.send(shmsg)
                 return
             else:
-                shmsg=bd+"\n----------------\n"
+                shmsg=board+"\n----------------\n"
                 boards = getBoards()
                 try:
-                    b_to_cycle=boards.get(name__exact=bd)
+                    b_to_cycle=boards.get(name__exact=board)
                     for c in b_to_cycle.clip_set.all():
                         shmsg+=c.name+" ["
                         for a in c.alias_set.all():
@@ -496,14 +499,32 @@ class Command(BaseCommand):
                 songName = introSt.getIntro(member.id)["songName"]
                 await playHelper(member, songName, board)
 
+            if await num_in_voice(member.guild) == 1 and alreadyInVoice() is not None:
+                await alreadyInVoice().disconnect()
+
+            #TODO add command sound for "now it's a party" or something and trigger it if numvoice == 10
+
+        async def num_in_voice(guild):
+            num_mem = 0
+            for chan in guild.voice_channels:
+                num_mem += len(chan.members)
+            return num_mem
+
+
         #Milton app commands
         #
         #
         #
         @bot.command(hidden=True)
+<<<<<<< HEAD
         async def milton(ctx, clip, board, discid: int):
             try:
                 idcheck = ctx.message.webhook_id
+=======
+        async def milton(ctx, clip, board, discid):
+            try:
+                web_id = ctx.webhook_id
+>>>>>>> master
             except AttributeError:
                 return
             for guild in bot.guilds:
