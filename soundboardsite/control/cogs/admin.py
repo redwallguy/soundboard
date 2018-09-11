@@ -52,7 +52,6 @@ class AdminCog:
         Display list of mods.
         """
         modmsg = "These are your mods, with hella nice bods.\n--------------------\n"
-        print(modmsg)
 
         for mod in checks.creds.mods:
             print(mod)

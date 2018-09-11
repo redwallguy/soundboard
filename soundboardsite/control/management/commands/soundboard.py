@@ -2,75 +2,29 @@ import discord
 import asyncio
 import os
 from discord.ext import commands
-import redis
-import json
-import control.models as models
 import time
 from django.core.management.base import BaseCommand
-from control.cogs.utils import checks
+from ...cogs.utils import checks
 import logging
 
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
-        class boardState:
-            def __init__(self):
-                self.currentBoard = "kripp"
 
-            def changeCurrent(self, board):
-                self.currentBoard = board
-        class introState:
-            def __init__(self, introDict={}):
-                self.introDict = introDict
-
-            def changeIntro(self, uid, songName=None, board=None):
-                uid = str(uid)
-                if songName is not None:
-                    self.introDict[uid] = {"songName": songName, "board": board}
-                else:
-                    if uid in self.introDict:
-                        self.introDict.pop(uid)
-
-            def getIntro(self, uid):
-                uid = str(uid)
-                if uid in self.introDict:
-                    return self.introDict[uid]
-
-            def getIntroStr(self, uid):
-                uid = str(uid)
-                if uid in self.introDict:
-                    introStr = "Your intro is " +\
-                               self.introDict[uid]["songName"] +\
-                               " from the " + self.introDict[uid]["board"] +\
-                               " board."
-                    return introStr
-                else:
-                    return "You have no intro at this time."
-
-            def sendToRedis(self, red):
-                red.set("intros",json.dumps(self.introDict))
 
         # Variable imports and client initializations
         #
         #
         #
-        discToken = os.environ.get('DISCORD_TOKEN')
-
+        disc_token = os.environ.get('DISCORD_TOKEN')
         bot = commands.Bot(command_prefix='+')
-        r = redis.from_url(os.environ.get("REDIS_URL"), decode_responses=True)
 
-        introSt = introState(json.loads(r.get("intros")))
-        curbd = boardState()
-
-        # Helper functions and checks
+        # Logging and checks
         #
         #
         #
         logging.basicConfig(level=logging.INFO)
         checks.master_check(bot)
-
-        def getBoards():
-            return models.Board.objects.all()
 
                 
         @bot.event
@@ -84,16 +38,46 @@ class Command(BaseCommand):
             while True:
                 checks.spam.flush()
                 await asyncio.sleep(5)
+
+        def alreadyConnected(vc):
+            for client in bot.voice_clients:
+                if vc == client.channel:
+                    return True
+            return False
+
+        def clientFromChannel(chan):
+            for client in bot.voice_clients:
+                if chan == client.channel:
+                    return client
+
+        @bot.event
+        async def on_message(message):
+            if message.content == "+help":
+                if message.author.voice is not None and not message.author.bot:
+                    if not alreadyConnected(message.author.voice.channel):
+                        vc = await message.author.voice.channel.connect()
+                        vc.play(discord.FFmpegPCMAudio('./command_sounds/help.mp3'))
+                    else:
+                        vc = clientFromChannel(message.author.voice.channel)
+                        if not vc.is_playing():
+                            vc.play(discord.FFmpegPCMAudio('./command_sounds/help.mp3'))
+            await bot.process_commands(message)
         # Run bot
         #
         #
         #
-        bot.load_extension("control.cogs.admin")
+
+        extensions = ["control.cogs.admin",
+                      "control.cogs.voice"]
+
+        for extension in extensions:
+            bot.load_extension(extension)
+
         while True:
             try:
-                bot.run(discToken)
+                bot.run(disc_token)
             except Exception as e:
-                print(e)
+                logging.info(e)
                 time.sleep(60)
 
 #TODO convert command_sounds into playHelper paradigm, make commandsounds board which is locked from all but superuser
