@@ -6,6 +6,7 @@ import time
 from django.core.management.base import BaseCommand
 from ...cogs.utils import checks
 import logging
+import traceback
 
 
 class Command(BaseCommand):
@@ -67,7 +68,7 @@ class Command(BaseCommand):
             try:
                 bot.run(disc_token)
             except Exception as e:
-                logging.info(e)
+                logging.info(traceback.print_exc())
                 time.sleep(60)
 
 #TODO convert command_sounds into playHelper paradigm, make commandsounds board which is locked from all but superuser
