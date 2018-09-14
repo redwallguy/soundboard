@@ -44,11 +44,11 @@ class Command(BaseCommand):
         async def on_message(message):
             if message.content == "+help":
                 if message.author.voice is not None and not message.author.bot:
-                    if not bot.get_cog("control.cogs.voice").alreadyConnected(message.author.voice.channel): #bot.get_cog returns class instance
+                    if not bot.get_cog("VoiceCog").alreadyConnected(message.author.voice.channel): #bot.get_cog returns class instance
                         vc = await message.author.voice.channel.connect()
                         vc.play(discord.FFmpegPCMAudio('./command_sounds/help.mp3'))
                     else:
-                        vc = bot.get_cog("control.cogs.voice").clientFromChannel(message.author.voice.channel)
+                        vc = bot.get_cog("VoiceCog").clientFromChannel(message.author.voice.channel)
                         if not vc.is_playing():
                             vc.play(discord.FFmpegPCMAudio('./command_sounds/help.mp3'))
             await bot.process_commands(message)
