@@ -190,8 +190,8 @@ class VoiceCog:
     #
     #
     #
-    @commands.command(aliases=['ls'])
-    async def listBoard(self, ctx, bd=None):
+    @commands.command(name='listboard', aliases=['ls'])
+    async def list_board(self, ctx, bd=None):
         """
         Shows the list of soundboards available.
 
@@ -260,8 +260,8 @@ class VoiceCog:
                 return False
 
 
-    @commands.command()
-    async def setIntro(self, ctx, songName, board):
+    @commands.command(name='setintro')
+    async def set_intro(self, ctx, songName, board):
         """
         Sets an intro from the soundboard that plays whenever you
         enter a voice channel.
@@ -273,16 +273,16 @@ class VoiceCog:
             await ctx.send("That clip does not exist. Rip.")
 
 
-    @commands.command()
-    async def remIntro(self, ctx):
+    @commands.command(name='remintro')
+    async def rem_intro(self, ctx):
         """
         Removes your intro.
         """
         introSt.changeIntro(ctx.author.id)
 
 
-    @commands.command()
-    async def myIntro(self, ctx):
+    @commands.command(name='myintro')
+    async def my_intro(self, ctx):
         """
         Returns your intro.
         """
@@ -308,6 +308,7 @@ class VoiceCog:
             await self.alreadyInVoice().disconnect()
 
         # TODO add command sound for "now it's a party" or something and trigger it if numvoice == 10
+        # TODO play "great to see the gang back together" when me, jon, iain, dolan, tim all on
 
 
     def num_in_voice(self, guild):

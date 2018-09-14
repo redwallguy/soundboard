@@ -39,26 +39,15 @@ class Command(BaseCommand):
                 checks.spam.flush()
                 await asyncio.sleep(5)
 
-        def alreadyConnected(vc):
-            for client in bot.voice_clients:
-                if vc == client.channel:
-                    return True
-            return False
-
-        def clientFromChannel(chan):
-            for client in bot.voice_clients:
-                if chan == client.channel:
-                    return client
-
         @bot.event
         async def on_message(message):
             if message.content == "+help":
                 if message.author.voice is not None and not message.author.bot:
-                    if not alreadyConnected(message.author.voice.channel):
+                    if not bot.get_cog("control.cogs.voice").alreadyConnected(message.author.voice.channel): #bot.get_cog returns class instance
                         vc = await message.author.voice.channel.connect()
                         vc.play(discord.FFmpegPCMAudio('./command_sounds/help.mp3'))
                     else:
-                        vc = clientFromChannel(message.author.voice.channel)
+                        vc = bot.get_cog("control.cogs.voice").clientFromChannel(message.author.voice.channel)
                         if not vc.is_playing():
                             vc.play(discord.FFmpegPCMAudio('./command_sounds/help.mp3'))
             await bot.process_commands(message)
@@ -68,7 +57,8 @@ class Command(BaseCommand):
         #
 
         extensions = ["control.cogs.admin",
-                      "control.cogs.voice"]
+                      "control.cogs.voice",
+                      "control.cogs.reminder"]
 
         for extension in extensions:
             bot.load_extension(extension)

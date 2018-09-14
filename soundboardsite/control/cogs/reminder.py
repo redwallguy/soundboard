@@ -1,19 +1,73 @@
 from discord.ext import commands
+from celery import Celery
+import os
+from .utils import miltonredis as mr
+from .utils import checks
+from .utils import converters
+import requests
+
+app = Celery('soundboard', broker=os.environ.get("REDIS_URL"))
+
+@app.task(name='soundboardsite.control.cogs.reminder.remind')
+def remind(aid, message):
+    remindObj.dec_user(aid)
+    requests.post(os.environ.get("WEBHOOK_URL"), headers={'Content-Type': 'application/json'},
+                  json={'content': message})
+
+def reminder_lim_check(ctx):
+    if remindObj.num_pending(ctx.author.id) <= remindObj.REMINDER_LIMIT:
+        return True
+    else:
+        return False
+
+def reminder_lim():
+    return commands.check(reminder_lim_check)
+
+class Remind:
+
+    def __init__(self):
+        self.REMINDER_LIMIT = 5
+        if mr.get_value("reminder") is None:
+            mr.set_json_value("reminder", {})
+            self.remind_dict = {}
+        else:
+            self.remind_dict = mr.get_json_value("reminder")
+
+    def num_pending(self, aid):
+        aid = str(aid)
+        if aid in self.remind_dict:
+            return self.remind_dict[aid]
+        else:
+            return 0
+
+    def inc_user(self, aid):
+        aid = str(aid)
+        if self.num_pending(aid) == 0:
+            self.remind_dict[aid] = 1
+        else:
+            self.remind_dict[aid] += 1
+        mr.set_json_value("reminder", self.remind_dict)
+
+    def dec_user(self, aid):
+        aid = str(aid)
+        if self.num_pending(aid) <= 0:
+            self.remind_dict[aid] = 0
+        else:
+            self.remind_dict[aid] -= 1
+        mr.set_json_value("reminder", self.remind_dict)
+
+remindObj = Remind()
+
 
 class ReminderCog:
 
     def __init__(self, bot):
         self.bot = bot
 
-    async def no_reminder(ctx):
-        if remindObj.is_pending(ctx.author.id):
-            return False
-        else:
-            return True
-
     @commands.command()
-    @commands.check(no_reminder)
-    async def remindat(ctx, date: to_date, msg=None):
+    @reminder_lim()
+    @checks.is_mod()
+    async def remindat(self, ctx, date: converters.to_date, msg=None):
         """
         Sends reminder back to channel at time specified by [date] with the given message.
         Date should be formatted as mm/dd/yyyy/hh:mm (UTC time).
@@ -25,15 +79,16 @@ class ReminderCog:
         default_msg = "<@" + str(ctx.author.id) + ">" + " has been reminded!"
         if msg is None:
             remind.apply_async(args=[ctx.author.id, default_msg], eta=date)
-            remindObj.add_user(ctx.author.id)
+            remindObj.inc_user(ctx.author.id)
             return
         else:
             remind.apply_async(args=[ctx.author.id, "<@" + str(ctx.author.id) + "> " + msg], eta=date)
-            remindObj.add_user(ctx.author.id)
+            remindObj.inc_user(ctx.author.id)
 
-    @bot.command()
-    @commands.check(no_reminder)
-    async def remindafter(ctx, hours: int, minutes: int, msg=None):
+    @commands.command()
+    @reminder_lim()
+    @checks.is_mod()
+    async def remindafter(self, ctx, hours: int, minutes: int, msg=None):
         """
         Sends reminder back to the channel after [hours] hours and [minutes] minutes, with the given message.
 
@@ -51,15 +106,15 @@ class ReminderCog:
             return
         if msg is None:
             remind.apply_async(args=[ctx.author.id, default_msg], countdown=delay_in_sec)
-            remindObj.add_user(ctx.author.id)
+            remindObj.inc_user(ctx.author.id)
             return
         else:
             remind.apply_async(args=[ctx.author.id, "<@" + str(ctx.author.id) + "> " + msg], countdown=delay_in_sec)
-            remindObj.add_user(ctx.author.id)
+            remindObj.inc_user(ctx.author.id)
             return
 
     @remindat.error
-    async def remindat_error(ctx, error):
+    async def remindat_error(self, ctx, error):
         if isinstance(error, commands.BadArgument):
             await ctx.send("Your reminder time is bad. Type !help remindat to see the rules for setting a reminder.")
 
