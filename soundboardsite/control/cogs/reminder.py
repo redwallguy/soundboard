@@ -8,7 +8,7 @@ import requests
 
 app = Celery('soundboard', broker=os.environ.get("REDIS_URL"))
 
-@app.task(name='soundboardsite.control.cogs.reminder.remind')
+@app.task(name='soundboardsite.control.cogs.reminder.remind') #Need to manually put in name to match Procfile or bad things happen
 def remind(aid, message):
     remindObj.dec_user(aid)
     requests.post(os.environ.get("WEBHOOK_URL"), headers={'Content-Type': 'application/json'},
