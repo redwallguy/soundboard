@@ -3,6 +3,9 @@ from discord.ext import commands
 from .utils import miltonredis, checks
 from .. import models
 from django.core.exceptions import ObjectDoesNotExist
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 
 class boardState:
@@ -71,7 +74,6 @@ class VoiceCog:
     async def switchBoards(self, ctx, board):
         """
         Switches the soundboard to <board>
-        Only usable by mods.
         """
         if self.switchBoardsHelper(board):
             await self.listBoardHelper(ctx, board)
@@ -140,8 +142,7 @@ class VoiceCog:
 
     async def playHelper(self, member, songName, board):
         boards = getBoards()
-        print(board)
-        if member.voice is not None and not member.bot:
+        if member.voice is not None:
             b_to_search = boards.get(name__exact=board)
             clip_set = b_to_search.clip_set.all()
             try:
@@ -160,7 +161,7 @@ class VoiceCog:
                         vc.play(discord.FFmpegPCMAudio(songUrl))
                 return True
             except ObjectDoesNotExist:
-                print("Name does not match, searching aliases...")
+                logging.info("Name does not match, searching aliases...")
                 try:
                     aliConn = models.Alias.objects.all().get(name__exact=
                                                              songName,
@@ -180,7 +181,7 @@ class VoiceCog:
                             vc.play(discord.FFmpegPCMAudio(songUrl))
                     return True
                 except ObjectDoesNotExist:
-                    print("No aliases match on specified board")
+                    logging.info("No aliases match on specified board")
                     return True
         else:
             return False
@@ -248,7 +249,7 @@ class VoiceCog:
             song = clip_set.get(name__exact=songName)
             return True
         except ObjectDoesNotExist:
-            print("Name does not match, searching aliases...")
+            logging.info("Name does not match, searching aliases...")
             try:
                 aliConn = models.Alias.objects.all().get(name__exact=
                                                          songName,

@@ -11,22 +11,33 @@ class CheckCreds:
         self.banned = [int(x) for x in miltonredis.get_list_value("banned")]
 
     def add_mod(self,uid):
-        miltonredis.add_to_list("mods", uid)
-        self.mods.append(uid)
+        if uid not in self.mods:
+            miltonredis.add_to_list("mods", uid)
+            self.mods.append(uid)
 
     def del_mod(self, uid):
         miltonredis.rem_from_list("mods", uid)
-        self.mods.remove(uid)
+        try:
+            self.mods.remove(uid)
+        except ValueError:
+            pass
 
     def add_banned(self, uid):
-        miltonredis.rem_from_list("mods", uid)
-        miltonredis.add_to_list("banned", uid)
-        self.banned.append(uid)
-        self.mods.remove(uid)
+        if uid not in self.banned:
+            miltonredis.rem_from_list("mods", uid)
+            miltonredis.add_to_list("banned", uid)
+            self.banned.append(uid)
+            try:
+                self.mods.remove(uid)
+            except ValueError:
+                pass
 
     def rem_banned(self, uid):
         miltonredis.rem_from_list("banned", uid)
-        self.banned.remove(uid)
+        try:
+            self.banned.remove(uid)
+        except ValueError:
+            pass
 
 class spamState:
     def __init__(self):

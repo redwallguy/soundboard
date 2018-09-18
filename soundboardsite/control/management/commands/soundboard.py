@@ -45,7 +45,11 @@ class Command(BaseCommand):
             if message.content == "+help":
                 if message.author.voice is not None and not message.author.bot:
                     if not bot.get_cog("VoiceCog").alreadyConnected(message.author.voice.channel): #bot.get_cog returns class instance
-                        vc = await message.author.voice.channel.connect()
+                        if not bot.get_cog("VoiceCog").alreadyInVoice():
+                            vc = await message.author.voice.channel.connect()
+                        else:
+                            vc = bot.get_cog("VoiceCog").alreadyInVoice()
+                            await vc.move_to(message.author.voice.channel)
                         vc.play(discord.FFmpegPCMAudio('./command_sounds/help.mp3'))
                     else:
                         vc = bot.get_cog("VoiceCog").clientFromChannel(message.author.voice.channel)
@@ -64,11 +68,9 @@ class Command(BaseCommand):
         for extension in extensions:
             bot.load_extension(extension)
 
-        while True:
-            try:
-                bot.run(disc_token)
-            except Exception as e:
-                logging.info(traceback.print_exc())
-                time.sleep(60)
+        try:
+            bot.run(disc_token)
+        except Exception as e:
+            logging.info(traceback.print_exc())
 
 #TODO convert command_sounds into playHelper paradigm, make commandsounds board which is locked from all but superuser
