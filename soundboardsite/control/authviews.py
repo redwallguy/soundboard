@@ -6,10 +6,13 @@ import json
 from . import token
 from passlib.hash import pbkdf2_sha256
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError
 
 def create_user(request):
     if request.method == 'POST' and 'user' in request.POST:
         err_dict_no_pass = {"body": "No password provided."}
+        err_dict_bad_types = {"body": "Bad data types. Make sure 'user' and 'password' fields are strings."}
+        err_dict_dupe = {"body": "Username already in use. Please choose another username."}
         ok_dict = {"body": "User successfully created."}
 
         user = request.POST['user']
@@ -24,8 +27,9 @@ def create_user(request):
             u.save()
             return HttpResponse(content=json.dumps(ok_dict), content_type='application/json')
         except ValidationError:
-            err_dict = {"body": "Bad data types. Make sure 'user' and 'password' fields are strings."}
-            return HttpResponse(content=json.dumps(err_dict), content_type='application/json',status=400)
+            return HttpResponse(content=json.dumps(err_dict_bad_types), content_type='application/json',status=400)
+        except IntegrityError:
+            return  HttpResponse(content=json.dumps(err_dict_dupe), content_type='application/json', status=400)
 
 def login(request):
     if request.method == 'POST':
@@ -47,8 +51,54 @@ def login(request):
         else:
             return HttpResponse(content=json.dumps(err_dict_bad_cred),content_type='application/json',status=400)
 
-def auth(request):
-    return
+def change_password(request):
+    if request.method == 'POST':
+        err_dict_no_uandp = {"body": "Must provide username, old password, and new password."}
+        err_dict_bad_cred = {"body": "Incorrect username or password."}
+        ok_dict = {"body": "Password changed successfully"}
+        err_dict_bad_types = {"body": "Bad data types. Make sure 'user' and 'password' fields are strings."}
+
+        try:
+            user = request.POST['user']
+            password = request.POST['password']
+            new_password = request.POST['new_password']
+        except KeyError:
+            return HttpResponse(content=json.dumps(err_dict_no_uandp),content_type='application/json',status=400)
+
+        if not AppUser.objects.filter(user=user).exists():
+            return HttpResponse(content=json.dumps(err_dict_bad_cred),content_type='application/json', status=400)
+        elif pbkdf2_sha256.verify(password, AppUser.objects.filter(user=user).password_hash):
+            p_hash = pbkdf2_sha256.hash(new_password)
+            u = AppUser.objects.filter(user=user)
+            try:
+                u.password_hash = p_hash
+                u.save()
+                return HttpResponse(content=json.dumps(ok_dict), content_type='application/json')
+            except ValidationError:
+                return HttpResponse(content=json.dumps(err_dict_bad_types), content_type='application/json', status=400)
+        else:
+            return HttpResponse(content=json.dumps(err_dict_bad_cred),content_type='application/json',status=400)
+
+def delete_user(request):
+    if request.method == 'POST':
+        err_dict_no_uandp = {"body": "You must provide your username and password to delete your account."}
+        err_dict_bad_cred = {"body": "Incorrect username or password."}
+        try:
+            user = request.POST['user']
+            password = request.POST['password']
+        except KeyError:
+            return HttpResponse(content=json.dumps(err_dict_no_uandp), content_type='application/json', status=400)
+
+        if not AppUser.objects.filter(user=user).exists():
+            return HttpResponse(content=json.dumps(err_dict_bad_cred),content_type='application/json', status=400)
+        elif pbkdf2_sha256.verify(password, AppUser.objects.filter(user=user).password_hash):
+            u = AppUser.objects.filter(user=user)
+            u.delete()
+            ok_dict = {"body": "User has been deleted", "user_deleted": u.user}
+            return HttpResponse(content=json.dumps(ok_dict), content_type='application/json')
+        else:
+            return HttpResponse(json.dumps(err_dict_bad_cred), content_type='application/json', status=400)
+
 
 def authcode(request):
     if request.method == 'GET' and 'state' in request.GET:
