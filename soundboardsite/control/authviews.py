@@ -7,6 +7,9 @@ from . import token
 from passlib.hash import pbkdf2_sha256
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 def create_user(request):
     if request.method == 'POST' and 'user' in request.POST:
@@ -102,8 +105,10 @@ def delete_user(request):
 
 def authcode(request):
     if request.method == 'GET' and 'state' in request.GET:
+        loging.info('request being handled')
         u_to_check = request.GET['state']
         if AppUser.objects.filter(user=u_to_check).exists() and 'code' in request.GET:
+            logging.info('token request in progress')
             code = request.GET['code']
             client_id = os.environ.get('DISCORD_CLIENT_ID')
             client_secret = os.environ.get('DISCORD_CLIENT_SECRET')
@@ -124,8 +129,10 @@ def authcode(request):
             r = requests.post(api_endpoint,data,headers)
             r.raise_for_status()
             result = r.json()
+            logging.info('token retrieved')
 
             u = AppUser.objects.get(user=u_to_check)
             u.token = result["access_token"]
             u.refresh_token = result["refresh_token"]
             u.save()
+            logging.info('tokens saved')

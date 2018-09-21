@@ -11,5 +11,8 @@ urlpatterns = [
     path('api',apiviews.api, name='api'),
     path('callmilton', apiviews.callmilton, name='callmilton'),
     path('login', authviews.login, name='login'),
+    path('create_user', authviews.create_user, name='create_user'),
+    path('change_password', authviews.change_password, name='change_password'),
+    path('delete_user', authviews.delete_user, name='delete_user'),
 
 ]
