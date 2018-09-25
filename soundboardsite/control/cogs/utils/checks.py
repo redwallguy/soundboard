@@ -1,6 +1,8 @@
 from discord.ext import commands
 from . import miltonredis
 import logging
+from discord import Webhook, RequestsWebhookAdapter
+import os
 
 logging.basicConfig(level=logging.INFO)
 
@@ -74,14 +76,14 @@ def _master_check(ctx): #see discord bot.py and commands files, plus Red-Bot for
         return True
     elif ctx.author.id in creds.banned:
         return False
-    elif True:
-        try:
-            logging.info("Trying webhook")
-            a = ctx.message.webhook_id
+    try:
+        a = ctx.message.webhook_id
+        hook = Webhook.from_url(os.environ.get("MILTON_WEBHOOK"), adapter=RequestsWebhookAdapter()) #Make a webhook with our url and check if id matches
+        if hook.id == a: #If it's our webhook
             return True
-        except AttributeError:
-            pass
-    elif ctx.author.bot:
+    except AttributeError:
+        pass
+    if ctx.author.bot:
         return False
     elif ctx.author.id in spam.spam_dict:
         if spam.spam_dict[ctx.author.id] == 5:

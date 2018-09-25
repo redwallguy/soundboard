@@ -326,8 +326,7 @@ class VoiceCog:
     @commands.command(hidden=True)
     async def milton(self, ctx, clip, board, discid: int):
         try:
-            logging.info('trying webhook...')
-            web_id = ctx.message.webhook_id
+            web_id = ctx.message.webhook_id #See if it's a webhook
         except AttributeError:
             return
         for guild in self.bot.guilds:
@@ -335,7 +334,6 @@ class VoiceCog:
             if member is not None and member.voice is not None:
                 break
         try:
-            logging.info('member is %s', member)
             if member is not None and member.voice is not None:
                 await self.playHelper(member, clip, board)
         except AttributeError:
