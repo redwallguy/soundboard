@@ -2,6 +2,7 @@ from django.urls import path, re_path
 from . import boardviews
 from . import apiviews
 from . import authviews
+from django.contrib.auth import views as django_auth_views
 
 urlpatterns = [
     path('', boardviews.boards, name='boards'),
@@ -10,9 +11,11 @@ urlpatterns = [
     path('auth', authviews.authcode, name="auth"),
     path('api',apiviews.api, name='api'),
     path('callmilton', apiviews.callmilton, name='callmilton'),
-    path('login', authviews.login, name='login'),
+    path('login', django_auth_views.login, {"template_name": "control/registration/login.html"}, name='login'),
+    path('logout', django_auth_views.logout, {"next_page": "boards"}, name='logout'),
     path('create_user', authviews.create_user, name='create_user'),
-    path('change_password', authviews.change_password, name='change_password'),
-    path('delete_user', authviews.delete_user, name='delete_user'),
+    path('change_password', django_auth_views.password_change,{"template_name": "control/registration/password_change_form.html"}, name='change_password'),
+    path('app_login', authviews.app_login, name='app_login'),
+    path('test_token', authviews.test_token, name='test_token'),
 
 ]

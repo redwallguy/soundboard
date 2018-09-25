@@ -324,7 +324,7 @@ class VoiceCog:
     #
     #
     @commands.command(hidden=True)
-    async def milton(self, ctx, clip, board, discid):
+    async def milton(self, ctx, clip, board, discid: int):
         try:
             web_id = ctx.webhook_id
         except AttributeError:

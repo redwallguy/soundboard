@@ -53,6 +53,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'soundboardsite.urls'
+LOGIN_REDIRECT_URL = 'boards'
 
 TEMPLATES = [
     {

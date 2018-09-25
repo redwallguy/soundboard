@@ -6,28 +6,38 @@ import datetime
 import os
 import requests
 import json
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.models import User
+import logging
 
+logging.basicConfig(level=logging.DEBUG)
+
+@csrf_exempt
 def callmilton(request):
     err_dict_bad_token = {"body": "Bad/no token."}
     err_dict_user_dne = {"body": "User does not exist."}
     err_dict_wrong_args = {"body": "Incorrect args"}
     err_dict_disc = {"body": "Discord not authorized."}
     try:
-        user = token.validate_token(token.token_from_header(request['Authorization']))
+        username = token.validate_token(token.token_from_header(request['Authorization']))
     except (KeyError, jwt.InvalidTokenError):
         print("Bad token")
         return HttpResponse(content=json.dumps(err_dict_bad_token),content_type='application/json',status=400)
 
     if request.method == 'POST' and user:
         try:
-            user_obj = AppUser.objects.get(user__exact=user)
+            user = User.objects.get(username__exact=username)
+            app_user_obj = AppUser.objects.get(user__exact=user)
+        except User.DoesNotExist as e:
+            logging.debug(e)
+            return HttpResponse(content=json.dumps(err_dict_user_dne), content_type='application/json', status=400)
         except AppUser.DoesNotExist as e:
-            print(e)
+            logging.debug(e)
             return HttpResponse(content=json.dumps(err_dict_user_dne),content_type='application/json',status=400)
 
-        disc_token = user_obj.token
-        date = user_obj.token_time
-        refresh_token = user_obj.refresh_token
+        disc_token = app_user_obj.token
+        date = app_user_obj.token_time
+        refresh_token = app_user_obj.refresh_token
         if 'clip' not in request.POST or 'board' not in request.POST:
             print("Incorrect args")
             return HttpResponse(content=json.dumps(err_dict_wrong_args),content_type='application/json',status=400)
@@ -58,11 +68,9 @@ def callmilton(request):
             r.raise_for_status()
             result = r.json()
 
-            user_obj.token = result["access_token"]
-            user_obj.save()
-            disc_token = user_obj.token
-        else:
-            pass
+            app_user_obj.token = result["access_token"]
+            app_user_obj.save()
+            disc_token = app_user_obj.token
         r = requests.get("https://discordapp.com/api/users/@me", headers={"Authorization": "Bearer " + disc_token})
         r.raise_for_status()
         j = r.json()

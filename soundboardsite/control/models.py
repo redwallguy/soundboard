@@ -2,6 +2,7 @@ from django.db import models
 from constrainedfilefield.fields import ConstrainedFileField
 from django.core.exceptions import ValidationError
 from django.core.exceptions import NON_FIELD_ERRORS
+from django.contrib.auth.models import User
 
 def board_upload_handler(instance,filename):
     return '{bname}/{file}'.format(bname=instance.name,file=filename)
@@ -56,11 +57,10 @@ class Alias(models.Model):
         return self.name
 
 class AppUser(models.Model):
-    user = models.CharField(max_length=64, primary_key=True)
-    password_hash = models.CharField(max_length=64)
-    token = models.CharField(max_length=64,default="")
-    refresh_token = models.CharField(max_length=64,default="")
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    token = models.CharField(max_length=100)
+    refresh_token = models.CharField(max_length=100)
     token_time = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.user
+        return self.user.name

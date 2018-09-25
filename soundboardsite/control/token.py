@@ -4,11 +4,11 @@ import os
 secret = os.environ.get('MILTON_SECRET_KEY')
 
 def tokenize(user):
-    return jwt.encode({'user': user},secret)
+    return jwt.encode({'user': user},secret).decode("utf-8")
 
 def validate_token(token):
     try:
-        dec_jwt = jwt.decode(token, secret)
+        dec_jwt = jwt.decode(token.encode("utf-8"), secret)
         if 'user' in dec_jwt:
             return dec_jwt['user']
         else:

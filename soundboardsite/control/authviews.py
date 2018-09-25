@@ -1,111 +1,62 @@
-from django.http import HttpResponse
 from .models import *
 import requests
 import os
 import json
 from . import token
-from passlib.hash import pbkdf2_sha256
-from django.core.exceptions import ValidationError
-from django.db import IntegrityError
 import logging
+from django.shortcuts import render, redirect
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import login, authenticate
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 
 logging.basicConfig(level=logging.DEBUG)
 
+
 def create_user(request):
-    if request.method == 'POST' and 'user' in request.POST:
-        err_dict_no_pass = {"body": "No password provided."}
-        err_dict_bad_types = {"body": "Bad data types. Make sure 'user' and 'password' fields are strings."}
-        err_dict_dupe = {"body": "Username already in use. Please choose another username."}
-        ok_dict = {"body": "User successfully created."}
-
-        user = request.POST['user']
-        try:
-            password = request.POST['password']
-        except KeyError:
-            return HttpResponse(content=json.dumps(err_dict_no_pass),content_type='application/json', status=400)
-        p_hash = pbkdf2_sha256.hash(password)
-
-        try:
-            u = AppUser(user=user,password_hash=p_hash)
-            u.save()
-            return HttpResponse(content=json.dumps(ok_dict), content_type='application/json')
-        except ValidationError:
-            return HttpResponse(content=json.dumps(err_dict_bad_types), content_type='application/json',status=400)
-        except IntegrityError:
-            return  HttpResponse(content=json.dumps(err_dict_dupe), content_type='application/json', status=400)
-
-def login(request):
     if request.method == 'POST':
-        err_dict_no_uandp = {"body": "Must provide username and password."}
-        err_dict_bad_cred = {"body": "Incorrect username or password."}
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            username = form.cleaned_data.get('username')
+            raw_password = form.cleaned_data.get('password1')
+            user = authenticate(username=username, password=raw_password)
+            login(request, user)
+            return redirect('boards')
+    else:
+        form = UserCreationForm()
+    return render(request, 'control/registration/new_user.html', {'form': form})
 
+@csrf_exempt
+def app_login(request):
+    if request.method == 'POST':
+        err_dict_args = {"body": "Username and password must be provided."}
+        err_dict_creds = {"body": "Invalid credentials."}
         try:
-            user = request.POST['user']
+            username = request.POST['user']
             password = request.POST['password']
         except KeyError:
-            return HttpResponse(content=json.dumps(err_dict_no_uandp),content_type='application/json',status=400)
-
-        if not AppUser.objects.filter(user=user).exists():
-            return HttpResponse(content=json.dumps(err_dict_bad_cred),content_type='application/json', status=400)
-        elif pbkdf2_sha256.verify(password, AppUser.objects.filter(user=user).password_hash):
-            user_token = token.tokenize(user=user)
-            ok_dict = {"token": user_token, "body": "Successful login."}
+            return HttpResponse(content=json.dumps(err_dict_args), content_type='application/json', status=400)
+        user = authenticate(username=username,password=password)
+        if user is not None:
+            app_token = token.tokenize(user.username)
+            ok_dict = {"body": "Login successful", "token": app_token}
             return HttpResponse(content=json.dumps(ok_dict),content_type='application/json')
         else:
-            return HttpResponse(content=json.dumps(err_dict_bad_cred),content_type='application/json',status=400)
+            return HttpResponse(content=json.dumps(err_dict_creds), content_type='application/json', status=400)
 
-def change_password(request):
+@csrf_exempt
+def test_token(request):
     if request.method == 'POST':
-        err_dict_no_uandp = {"body": "Must provide username, old password, and new password."}
-        err_dict_bad_cred = {"body": "Incorrect username or password."}
-        ok_dict = {"body": "Password changed successfully"}
-        err_dict_bad_types = {"body": "Bad data types. Make sure 'user' and 'password' fields are strings."}
-
         try:
-            user = request.POST['user']
-            password = request.POST['password']
-            new_password = request.POST['new_password']
+            app_token = request.POST['token']
         except KeyError:
-            return HttpResponse(content=json.dumps(err_dict_no_uandp),content_type='application/json',status=400)
-
-        if not AppUser.objects.filter(user=user).exists():
-            return HttpResponse(content=json.dumps(err_dict_bad_cred),content_type='application/json', status=400)
-        elif pbkdf2_sha256.verify(password, AppUser.objects.filter(user=user).password_hash):
-            p_hash = pbkdf2_sha256.hash(new_password)
-            u = AppUser.objects.filter(user=user)
-            try:
-                u.password_hash = p_hash
-                u.save()
-                return HttpResponse(content=json.dumps(ok_dict), content_type='application/json')
-            except ValidationError:
-                return HttpResponse(content=json.dumps(err_dict_bad_types), content_type='application/json', status=400)
-        else:
-            return HttpResponse(content=json.dumps(err_dict_bad_cred),content_type='application/json',status=400)
-
-def delete_user(request):
-    if request.method == 'POST':
-        err_dict_no_uandp = {"body": "You must provide your username and password to delete your account."}
-        err_dict_bad_cred = {"body": "Incorrect username or password."}
-        try:
-            user = request.POST['user']
-            password = request.POST['password']
-        except KeyError:
-            return HttpResponse(content=json.dumps(err_dict_no_uandp), content_type='application/json', status=400)
-
-        if not AppUser.objects.filter(user=user).exists():
-            return HttpResponse(content=json.dumps(err_dict_bad_cred),content_type='application/json', status=400)
-        elif pbkdf2_sha256.verify(password, AppUser.objects.filter(user=user).password_hash):
-            u = AppUser.objects.filter(user=user)
-            u.delete()
-            ok_dict = {"body": "User has been deleted", "user_deleted": u.user}
-            return HttpResponse(content=json.dumps(ok_dict), content_type='application/json')
-        else:
-            return HttpResponse(json.dumps(err_dict_bad_cred), content_type='application/json', status=400)
-
+            return HttpResponse("No token", status=400)
+        return HttpResponse(token.validate_token(app_token))
 
 def authcode(request):
     if request.method == 'GET' and 'state' in request.GET:
-        loging.info('request being handled')
+        logging.info('request being handled')
         u_to_check = request.GET['state']
         if AppUser.objects.filter(user=u_to_check).exists() and 'code' in request.GET:
             logging.info('token request in progress')
