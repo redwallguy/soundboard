@@ -74,6 +74,13 @@ def _master_check(ctx): #see discord bot.py and commands files, plus Red-Bot for
         return True
     elif ctx.author.id in creds.banned:
         return False
+    elif True:
+        try:
+            logging.info("Trying webhook")
+            a = ctx.message.webhook_id
+            return True
+        except AttributeError:
+            pass
     elif ctx.author.bot:
         return False
     elif ctx.author.id in spam.spam_dict:

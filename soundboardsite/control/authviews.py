@@ -7,8 +7,10 @@ import logging
 from django.shortcuts import render, redirect
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login, authenticate
+from django.contrib.auth.models import User
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from jwt import InvalidTokenError
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -49,21 +51,22 @@ def app_login(request):
 def test_token(request):
     if request.method == 'POST':
         try:
-            app_token = request.POST['token']
-        except KeyError:
-            return HttpResponse("No token", status=400)
-        return HttpResponse(token.validate_token(app_token))
+            username = token.validate_token(token.token_from_header(request.META['HTTP_AUTHORIZATION']))
+        except (KeyError, InvalidTokenError) as e:
+            logging.debug(e)
+            return HttpResponse(content=json.dumps({"body": "Bad token"}), content_type='application/json', status=400)
+        return HttpResponse(content=json.dumps({"user": username}), content_type='application/json')
 
 def authcode(request):
     if request.method == 'GET' and 'state' in request.GET:
         logging.info('request being handled')
-        u_to_check = request.GET['state']
-        if AppUser.objects.filter(user=u_to_check).exists() and 'code' in request.GET:
+        try:
+            user = User.objects.get(username=request.GET['state'])
             logging.info('token request in progress')
             code = request.GET['code']
             client_id = os.environ.get('DISCORD_CLIENT_ID')
             client_secret = os.environ.get('DISCORD_CLIENT_SECRET')
-            redirect_uri = 'https://digest-soundboard.herokuapp.com/auth/'
+            redirect_uri = os.environ.get('REDIRECT_URI')
             api_endpoint = 'https://discordapp.com/api/oauth2/token'
 
             data = {
@@ -71,7 +74,8 @@ def authcode(request):
                 'client_secret': client_secret,
                 'grant_type': 'authorization_code',
                 'code': code,
-                'redirect_uri': redirect_uri
+                'redirect_uri': redirect_uri,
+                'scope': 'identify'
             }
             headers = {
                 'Content-Type': 'application/x-www-form-urlencoded'
@@ -82,8 +86,18 @@ def authcode(request):
             result = r.json()
             logging.info('token retrieved')
 
-            u = AppUser.objects.get(user=u_to_check)
-            u.token = result["access_token"]
-            u.refresh_token = result["refresh_token"]
-            u.save()
-            logging.info('tokens saved')
+            if AppUser.objects.filter(user=user).exists():
+                u = AppUser.objects.get(user=user)
+                u.token = result["access_token"]
+                u.refresh_token = result["refresh_token"]
+                u.save()
+                logging.info('tokens saved in existing AppUser')
+            else:
+                u = AppUser(user=user, token=result['access_token'], refresh_token=result['refresh_token'])
+                u.save()
+                logging.info("Tokens saved in new AppUser")
+            return HttpResponse("Nice job.")
+        except (KeyError, User.DoesNotExist) as e:
+            logging.debug("User does not exist.")
+    else:
+        logging.info(request.GET)

@@ -19,12 +19,12 @@ def callmilton(request):
     err_dict_wrong_args = {"body": "Incorrect args"}
     err_dict_disc = {"body": "Discord not authorized."}
     try:
-        username = token.validate_token(token.token_from_header(request['Authorization']))
+        username = token.validate_token(token.token_from_header(request.META['HTTP_AUTHORIZATION']))
     except (KeyError, jwt.InvalidTokenError):
         print("Bad token")
         return HttpResponse(content=json.dumps(err_dict_bad_token),content_type='application/json',status=400)
 
-    if request.method == 'POST' and user:
+    if request.method == 'POST' and username is not None:
         try:
             user = User.objects.get(username__exact=username)
             app_user_obj = AppUser.objects.get(user__exact=user)
@@ -33,7 +33,7 @@ def callmilton(request):
             return HttpResponse(content=json.dumps(err_dict_user_dne), content_type='application/json', status=400)
         except AppUser.DoesNotExist as e:
             logging.debug(e)
-            return HttpResponse(content=json.dumps(err_dict_user_dne),content_type='application/json',status=400)
+            return HttpResponse(content=json.dumps(err_dict_disc),content_type='application/json',status=400)
 
         disc_token = app_user_obj.token
         date = app_user_obj.token_time
@@ -44,13 +44,10 @@ def callmilton(request):
         else:
             clip = request.POST['clip']
             board = request.POST['board']
-        if disc_token == "":
-            print("No discord token")
-            return HttpResponse(content=json.dumps(err_dict_disc),content_type='application/json',status=409)
-        elif datetime.datetime.now(datetime.timezone.utc) - date > datetime.timedelta(seconds=604800):
+        if datetime.datetime.now(datetime.timezone.utc) - date > datetime.timedelta(seconds=604800):
             client_id = os.environ.get('DISCORD_CLIENT_ID')
             client_secret = os.environ.get('DISCORD_CLIENT_SECRET')
-            redirect_uri = 'https://digest-soundboard.herokuapp.com/auth/'
+            redirect_uri = os.environ.get('REDIRECT_URI')
             api_endpoint = 'https://discordapp.com/api/oauth2/token'
 
             data = {
@@ -58,7 +55,8 @@ def callmilton(request):
                 'client_secret': client_secret,
                 'grant_type': 'refresh_token',
                 'refresh_token': refresh_token,
-                'redirect_uri': redirect_uri
+                'redirect_uri': redirect_uri,
+                'scope': 'identify'
             }
             headers = {
                 'Content-Type': 'application/x-www-form-urlencoded'
@@ -77,7 +75,8 @@ def callmilton(request):
         discid = j["id"]
 
         r = requests.post(os.environ.get("MILTON_WEBHOOK"), headers={"Content-Type": "application/json"},
-                          json={"content": "!milton " + clip + " " + board + " " + discid})
+                          json={"content": "+milton " + clip + " " + board + " " + discid})
+        return HttpResponse("Well done.")
 
 def api(request):
     if request.method == 'GET':

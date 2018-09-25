@@ -57,10 +57,10 @@ class Alias(models.Model):
         return self.name
 
 class AppUser(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     token = models.CharField(max_length=100)
     refresh_token = models.CharField(max_length=100)
     token_time = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.user.name
+        return self.user.username
