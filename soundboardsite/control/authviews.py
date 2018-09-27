@@ -10,6 +10,7 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth.models import User
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
 from jwt import InvalidTokenError
 
 logging.basicConfig(level=logging.DEBUG)
@@ -56,6 +57,10 @@ def test_token(request):
             logging.debug(e)
             return HttpResponse(content=json.dumps({"body": "Bad token"}), content_type='application/json', status=400)
         return HttpResponse(content=json.dumps({"user": username}), content_type='application/json')
+
+@login_required
+def discord_view(request):
+    return render(request, 'control/discord.html')
 
 def authcode(request):
     if request.method == 'GET' and 'state' in request.GET:

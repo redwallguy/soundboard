@@ -1,0 +1,8 @@
+{% extends './base.html' %}
+
+{% block body %}
+<button><a href="https://discordapp.com/api/oauth2/authorize?
+client_id=419230620913369108&redirect_uri=https%3A%2F%2Fdi
+gest-soundboard.herokuapp.com%2Fauth&response_type=code&sc
+ope=identify&state={{user.username}}">Authorize Discord for the Milton app!</a></button>
+{% endblock %}

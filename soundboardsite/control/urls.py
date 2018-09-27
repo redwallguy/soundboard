@@ -15,7 +15,9 @@ urlpatterns = [
     path('logout', django_auth_views.logout, {"next_page": "boards"}, name='logout'),
     path('create_user', authviews.create_user, name='create_user'),
     path('change_password', django_auth_views.password_change,{"template_name": "control/registration/password_change_form.html"}, name='change_password'),
+    path('password_change_done', django_auth_views.password_change_done, {"template_name": "control/registration/password_change_done.html"}, name='password_change_done'),
     path('app_login', authviews.app_login, name='app_login'),
     path('test_token', authviews.test_token, name='test_token'),
+    path('discord', authviews.discord_view, name='discord'),
 
 ]

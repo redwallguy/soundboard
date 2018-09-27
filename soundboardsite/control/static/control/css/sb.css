@@ -56,6 +56,14 @@ label:active, button:active {
 	right: 0;
 }
 
+#welcome_member, #please_login {
+    width: 150px;
+    height: 100px;
+    position: fixed;
+    top: 0;
+    right: 0;
+}
+
 .sbcover {
 	width:100px;
 	height:100px;

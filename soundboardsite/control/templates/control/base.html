@@ -14,5 +14,11 @@
 	{% block krippface%}
 	<div id="kripp_face" style="background-image:url('{% static "control/img/kripp_face.png" %}');"></div>
 	{% endblock %}
+
+	{% if user.is_authenticated %}
+	<div id="welcome_member"><p>Welcome, {{user.username}}!</p><p><a href="/logout">Logout</a></p></div>
+	{% else %}
+	<div id="please_login"><a href="/login">Login</a> or <a href="/create_user">Register</a></div>
+	{% endif %}
 	</body>
 </html>
