@@ -19,5 +19,6 @@ urlpatterns = [
     path('app_login', authviews.app_login, name='app_login'),
     path('test_token', authviews.test_token, name='test_token'),
     path('discord', authviews.discord_view, name='discord'),
+    path('test_token', authviews.test_token, name='test_token'),
 
 ]

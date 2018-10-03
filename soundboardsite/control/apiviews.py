@@ -13,20 +13,15 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 @csrf_exempt
-def callmilton(request):
-    err_dict_bad_token = {"body": "Bad/no token."}
+@token.token_required
+def callmilton(request, **kwargs):
     err_dict_user_dne = {"body": "User does not exist."}
     err_dict_wrong_args = {"body": "Incorrect args"}
     err_dict_disc = {"body": "Discord not authorized."}
-    try:
-        username = token.validate_token(token.token_from_header(request.META['HTTP_AUTHORIZATION']))
-    except (KeyError, jwt.InvalidTokenError):
-        print("Bad token")
-        return HttpResponse(content=json.dumps(err_dict_bad_token),content_type='application/json',status=400)
 
-    if request.method == 'POST' and username is not None:
+    if request.method == 'POST':
         try:
-            user = User.objects.get(username__exact=username)
+            user = User.objects.get(username__exact=kwargs['username'])
             app_user_obj = AppUser.objects.get(user__exact=user)
         except User.DoesNotExist as e:
             logging.debug(e)

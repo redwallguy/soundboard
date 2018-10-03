@@ -64,3 +64,20 @@ class AppUser(models.Model):
 
     def __str__(self):
         return self.user.username
+
+class Playlist(models.Model):
+    name = models.CharField(max_length=30)
+    user = models.ForeignKey(AppUser, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        unique_together = ("name", "user")
+
+class PlaylistClip(models.Model):
+    clip = models.ForeignKey(Clip,on_delete=models.CASCADE)
+    playlist = models.ForeignKey(Playlist, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ("clip", "playlist")
