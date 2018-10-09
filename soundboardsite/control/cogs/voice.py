@@ -5,9 +5,6 @@ from .. import models
 from django.core.exceptions import ObjectDoesNotExist
 import logging
 
-logging.basicConfig(level=logging.INFO)
-
-
 class boardState:
     def __init__(self):
         self.currentBoard = "kripp"
@@ -24,11 +21,11 @@ class introState:
         uid = str(uid)
         if songName is not None:
             self.introDict[uid] = {"songName": songName, "board": board}
-            miltonredis.set_json_value("intro", self.introDict)
+            miltonredis.set_json_value("intros", self.introDict)
         else:
             if uid in self.introDict:
                 self.introDict.pop(uid)
-                miltonredis.set_json_value("intro", self.introDict)
+                miltonredis.set_json_value("intros", self.introDict)
 
     def getIntro(self, uid):
         uid = str(uid)
@@ -241,7 +238,7 @@ class VoiceCog:
     #
     #
     #
-    async def clipExists(self, songName, board):
+    def clipExists(self, songName, board):
         boards = getBoards()
         b_to_search = boards.get(name__exact=board)
         clip_set = b_to_search.clip_set.all()

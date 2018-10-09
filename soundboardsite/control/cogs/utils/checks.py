@@ -2,8 +2,6 @@ from discord.ext import commands
 from . import miltonredis
 import logging
 
-logging.basicConfig(level=logging.INFO)
-
 class CheckCreds:
     def __init__(self):
         self.overlord = int(miltonredis.get_value("discord_admin"))

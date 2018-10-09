@@ -2,7 +2,6 @@ import discord
 import asyncio
 import os
 from discord.ext import commands
-import time
 from django.core.management.base import BaseCommand
 from ...cogs.utils import checks
 import logging
