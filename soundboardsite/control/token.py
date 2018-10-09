@@ -44,7 +44,7 @@ def token_from_header(token_str):
 def token_required(view):
     def bad_token():
         return HttpResponse(content=json.dumps({"body": "Bad token"}), content_type='application/json', status=400)
-    def wrapper(request):
+    def wrapper(request): #look at decorator bookmark and kwargs docs to remember thought process
         try:
             username = validate_token(token_from_header(request.META['HTTP_AUTHORIZATION']))
         except (KeyError, jwt.InvalidTokenError):

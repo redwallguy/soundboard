@@ -9,7 +9,7 @@ urlpatterns = [
     re_path(r'^boards/(?P<spec_board>\w{1,20})/$',
             boardviews.clips_of_board, name='clips'),
     path('auth', authviews.authcode, name="auth"),
-    path('api',apiviews.api, name='api'),
+    path('api/boards',apiviews.board_api, name='board_api'),
     path('callmilton', apiviews.callmilton, name='callmilton'),
     path('login', django_auth_views.login, {"template_name": "control/registration/login.html"}, name='login'),
     path('logout', django_auth_views.logout, {"next_page": "boards"}, name='logout'),
@@ -19,6 +19,9 @@ urlpatterns = [
     path('app_login', authviews.app_login, name='app_login'),
     path('test_token', authviews.test_token, name='test_token'),
     path('discord', authviews.discord_view, name='discord'),
-    path('test_token', authviews.test_token, name='test_token'),
+    path('api/playlists',apiviews.playlist_api, name='playlist_api'),
+    path('playlists', boardviews.playlist, name="user_playlists"),
+    #re_path(r'^playlists/(?P<spec_playlist>\w{1,20})/$', boardviews.clips_of_playlist, name='playlist_clips'),
+    path('ajax/new_playlist', boardviews.new_playlist, name="ajax_new_playlist"),
 
 ]

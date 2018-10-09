@@ -73,7 +73,7 @@ def callmilton(request, **kwargs):
                           json={"content": "+milton " + clip + " " + board + " " + discid})
         return HttpResponse("Well done.")
 
-def api(request):
+def board_api(request):
     if request.method == 'GET':
         board_manager = Board.objects.all()
         bds = {}
@@ -84,3 +84,26 @@ def api(request):
                 bds[bd.name].append(clip.name)
         bds_json = json.dumps(bds)
         return HttpResponse(content=bds_json,content_type='application/json')
+
+@token.token_required
+def playlist_api(request, **kwargs):
+    if request.method == 'GET':
+        err_dict_user_dne = {"body": "User does not exist."}
+        err_dict_no_playlists = {"body": "No playlists made yet."}
+        try:
+            user = User.objects.get(username__exact=kwargs['username'])
+        except User.DoesNotExist as e:
+            logging.debug(e)
+            return HttpResponse(content=json.dumps(err_dict_user_dne), content_type='application/json', status=400)
+        if user.playlist_set.all().exists():
+            playlist_manager = user.playlist_set.all()
+            pls = {}
+            for pl in playlist_manager:
+                playlist_clips = pl.playlistclip_set.all()
+                pls[pl.name] = []
+                for clip in playlist_clips:
+                    pls[pl.name].append(clip.name)
+            pls_json = json.dumps(pls)
+            return HttpResponse(content=pls_json,content_type='application/json')
+        else:
+            return HttpResponse(content=json.dumps(err_dict_no_playlists), content_type='application/json', status=404)

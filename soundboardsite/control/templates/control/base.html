@@ -20,5 +20,9 @@
 	{% else %}
 	<div id="please_login"><a href="/login">Login</a> or <a href="/create_user">Register</a></div>
 	{% endif %}
+
+	<script src="{% static "control/js/jquery-1.12.2.min.js" %}"></script>
+	<script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
+	{% block javascript %}{% endblock %}
 	</body>
 </html>

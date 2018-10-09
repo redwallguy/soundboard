@@ -1,0 +1,56 @@
+{% extends '../base.html' %}
+
+{% block body %}
+<h1>Your playlists</h1>
+<table>
+    {% for p in playlists %}
+    <tr>
+        <td><a href="playlists/{{p.name}}">{{p.name}}</a></td>
+    </tr>
+    {% endfor %}
+    <tr>
+        <td><input type="text" placeholder="Playlist name here..."
+                                         id="playlist_add_new_text" maxlength="20">
+            <button id="playlists_add_new" data-new-playlist-url="{% url 'ajax_new_playlist' %}">Add new</button></td>
+    </tr>
+</table>
+{% endblock %}
+{% block javascript %}
+<script>
+$(document).ready(function() {
+
+    var csrftoken = Cookies.get('csrftoken');
+    function csrfSafeMethod(method) {
+        // these HTTP methods do not require CSRF protection
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+    $("#playlists_add_new").click(function() {
+        console.log($("#playlist_add_new_text").val());
+
+        $.ajax({
+            type: "POST",
+            url: $(this).attr("data-new-playlist-url"),
+            data: {
+                "name": $("#playlist_add_new_text").val()
+            },
+            dataType: 'json',
+            success: function(data) {
+                if ("error" in data) {
+                    alert(data.error);
+                }
+                else {
+                alert("Success. " + data.name + " was created.");
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

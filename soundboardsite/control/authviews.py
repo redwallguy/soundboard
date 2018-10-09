@@ -15,6 +15,8 @@ from jwt import InvalidTokenError
 
 logging.basicConfig(level=logging.DEBUG)
 
+#TODO convert HttpResponses to JSONResponses (django.http -> JSONResponse)
+
 
 def create_user(request):
     if request.method == 'POST':
