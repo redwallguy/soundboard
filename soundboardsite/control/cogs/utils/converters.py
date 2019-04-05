@@ -4,6 +4,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
+# converter for reminder commands TODO resume Heroku reminder process when $$ acquired
 def to_date(dt):
     dt_split = dt.split("/")
     if len(dt_split) != 4:

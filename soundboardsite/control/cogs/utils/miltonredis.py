@@ -2,6 +2,7 @@ import redis
 import json
 import os
 
+# call redis here and not in soundboard.py
 r = redis.from_url(os.environ.get("REDIS_URL"), decode_responses=True)
 
 def get_value(key):

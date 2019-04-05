@@ -13,20 +13,14 @@ class Command(BaseCommand):
 
 
         # Variable imports and client initializations
-        #
-        #
-        #
         disc_token = os.environ.get('DISCORD_TOKEN')
         bot = commands.Bot(command_prefix='+')
 
         # Logging and checks
-        #
-        #
-        #
         logging.basicConfig(level=logging.INFO)
         checks.master_check(bot)
 
-                
+
         @bot.event
         async def on_command(ctx):
             checks.spam.incrSpam(ctx.author.id)
@@ -40,7 +34,7 @@ class Command(BaseCommand):
                 await asyncio.sleep(5)
 
         @bot.event
-        async def on_message(message):
+        async def on_message(message): #VoiceCog playhelper command because help clip is in filesystem
             if message.content == "+help":
                 if message.author.voice is not None and not message.author.bot:
                     if not bot.get_cog("VoiceCog").alreadyConnected(message.author.voice.channel): #bot.get_cog returns class instance
@@ -55,14 +49,10 @@ class Command(BaseCommand):
                         if not vc.is_playing():
                             vc.play(discord.FFmpegPCMAudio('./command_sounds/help.mp3'))
             await bot.process_commands(message)
-        # Run bot
-        #
-        #
-        #
 
+        # Run bot
         extensions = ["control.cogs.admin",
-                      "control.cogs.voice",
-                      "control.cogs.reminder"]
+                      "control.cogs.voice",]
 
         for extension in extensions:
             bot.load_extension(extension)

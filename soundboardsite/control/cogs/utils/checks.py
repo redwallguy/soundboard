@@ -4,7 +4,7 @@ import logging
 
 class CheckCreds:
     def __init__(self):
-        self.overlord = int(miltonredis.get_value("discord_admin"))
+        self.overlord = int(miltonredis.get_value("discord_admin")) # me
         self.mods = [int(x) for x in miltonredis.get_list_value("mods")]
         self.banned = [int(x) for x in miltonredis.get_list_value("banned")]
 
@@ -26,7 +26,7 @@ class CheckCreds:
             miltonredis.add_to_list("banned", uid)
             self.banned.append(uid)
             try:
-                self.mods.remove(uid)
+                self.mods.remove(uid) # banning also strips mod privileges
             except ValueError:
                 pass
 
@@ -37,7 +37,7 @@ class CheckCreds:
         except ValueError:
             pass
 
-class spamState:
+class spamState: # Rate limiting class
     def __init__(self):
         self.spam_dict = {}
 
@@ -58,13 +58,13 @@ spam = spamState()
 def is_owner_check(ctx):
     return ctx.author.id == creds.overlord
 
-def is_owner():
+def is_owner(): # see master_check comments
     return commands.check(is_owner_check)
 
 def is_mod_check(ctx):
     return is_owner_check(ctx) or ctx.author.id in creds.mods
 
-def is_mod():
+def is_mod(): # see master_check comments
     return commands.check(is_mod_check)
 
 def _master_check(ctx): #see discord bot.py and commands files, plus Red-Bot for remembering how you figured this out
@@ -82,5 +82,5 @@ def _master_check(ctx): #see discord bot.py and commands files, plus Red-Bot for
     else:
         return True
 
-def master_check(bot):
+def master_check(bot): # add master check to bot
     bot.check(_master_check)

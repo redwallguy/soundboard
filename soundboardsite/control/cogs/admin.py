@@ -44,8 +44,6 @@ class AdminCog:
                 vc = await ctx.author.voice.channel.connect()
                 vc.play(discord.FFmpegPCMAudio('./command_sounds/banneddude.mp3'))
 
-            #TODO add "banneddude" clip
-
     @commands.command()
     @checks.is_mod()
     async def unban(self, ctx, banned: int):
@@ -84,8 +82,3 @@ class AdminCog:
 
 def setup(bot):
     bot.add_cog(AdminCog(bot))
-
-
-
-
-

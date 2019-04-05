@@ -54,12 +54,16 @@ def getBoards():
 
 class VoiceCog:
 
+    # Functions with the `Helper` suffix perform the logic of the discord command,
+    # while the command function calls the helper. Used so that command logic can
+    # be used outside of being called through Discord.
+
     def __init__(self, bot):
         self.bot = bot
 
     @commands.command()
     @checks.is_mod()
-    async def bye(self, ctx):
+    async def bye(self, ctx): # dismiss bot
         """
         Disconnects bot from voice.
         """
@@ -68,7 +72,7 @@ class VoiceCog:
 
 
     @commands.command(aliases=['sb', 'switch'])
-    async def switchBoards(self, ctx, board):
+    async def switchBoards(self, ctx, board): # switch default board for playing clips
         """
         Switches the soundboard to <board>
         """
@@ -81,20 +85,20 @@ class VoiceCog:
         boards = getBoards()
         if boards.filter(name__exact=board).exists():
             curbd.changeCurrent(board)
-            print("Board switched to " + curbd.currentBoard)
+            logging.info("Board switched to " + curbd.currentBoard)
             return True
         else:
             return False
 
 
-    def alreadyConnected(self, vc):
+    def alreadyConnected(self, vc): # returns if voice client exists
         for client in self.bot.voice_clients:
             if vc == client.channel:
                 return True
         return False
 
 
-    def alreadyInVoice(self):
+    def alreadyInVoice(self): # returns voice client or false if none are connected
         for client in self.bot.voice_clients:
             if client.is_connected():
                 return client
@@ -136,16 +140,16 @@ class VoiceCog:
         else:
             ctx.send("Only humans in voice channels accepted here.")
 
-
+    # Main play command logic
     async def playHelper(self, member, songName, board):
         boards = getBoards()
-        if member.voice is not None:
+        if member.voice is not None: # if in voice
             b_to_search = boards.get(name__exact=board)
             clip_set = b_to_search.clip_set.all()
-            try:
+            try: # cycle through clip names
                 song = clip_set.get(name__exact=songName)
                 songUrl = song.sound.url
-                if not self.alreadyConnected(member.voice.channel):
+                if not self.alreadyConnected(member.voice.channel): # play clip
                     if not self.alreadyInVoice():
                         vc = await member.voice.channel.connect()
                     else:
@@ -159,13 +163,13 @@ class VoiceCog:
                 return True
             except ObjectDoesNotExist:
                 logging.info("Name does not match, searching aliases...")
-                try:
+                try: # cycle through aliases
                     aliConn = models.Alias.objects.all().get(name__exact=
                                                              songName,
                                                              clip__board__name__exact=
                                                              board)
                     songUrl = aliConn.clip.sound.url
-                    if not self.alreadyConnected(member.voice.channel):
+                    if not self.alreadyConnected(member.voice.channel): # play clip
                         if not self.alreadyInVoice():
                             vc = await member.voice.channel.connect()
                         else:
@@ -185,9 +189,6 @@ class VoiceCog:
 
 
     # Helper commands
-    #
-    #
-    #
     @commands.command(name='listboard', aliases=['ls'])
     async def list_board(self, ctx, bd=None):
         """
@@ -211,7 +212,7 @@ class VoiceCog:
             shmsg = curbd.currentBoard + "\n----------------\n"
             boards = getBoards()
             b_to_cycle = boards.get(name__exact=curbd.currentBoard)
-            for c in b_to_cycle.clip_set.all():
+            for c in b_to_cycle.clip_set.all(): # list all clips in current board
                 shmsg += c.name + " ["
                 for a in c.alias_set.all():
                     shmsg += a.name + ","
@@ -223,7 +224,7 @@ class VoiceCog:
             boards = getBoards()
             try:
                 b_to_cycle = boards.get(name__exact=board)
-                for c in b_to_cycle.clip_set.all():
+                for c in b_to_cycle.clip_set.all(): # list all clips in specified board
                     shmsg += c.name + " ["
                     for a in c.alias_set.all():
                         shmsg += a.name + ","
@@ -235,9 +236,6 @@ class VoiceCog:
 
 
     # Voice join intro functions
-    #
-    #
-    #
     def clipExists(self, songName, board):
         boards = getBoards()
         b_to_search = boards.get(name__exact=board)
@@ -314,27 +312,6 @@ class VoiceCog:
         for chan in guild.voice_channels:
             num_mem += len(chan.members)
         return num_mem
-
-
-    # Milton app commands
-    #
-    #
-    #
-    @commands.command(hidden=True)
-    async def milton(self, ctx, clip, board, discid):
-        try:
-            web_id = ctx.webhook_id
-        except AttributeError:
-            return
-        for guild in self.bot.guilds:
-            member = discord.utils.get(guild.members, id=discid)
-            if member is not None and member.voice is not None:
-                break
-        try:
-            if member is not None and member.voice is not None:
-                await self.playHelper(member, clip, board)
-        except AttributeError:
-            pass
 
 def setup(bot):
     bot.add_cog(VoiceCog(bot))
